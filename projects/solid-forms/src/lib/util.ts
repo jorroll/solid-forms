@@ -19,6 +19,8 @@ export function mergeObj<A, B>(a: A, b: Merge<Partial<A>, B>): Merge<A, B> {
  *
  * Implementation is very simple:
  * ```ts
+ * import { getOwner, runWithOwner } from 'solid-js';
+ *
  * export function bindOwner<T>(fn: () => T): () => T {
  *   const owner = getOwner();
  *
