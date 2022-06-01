@@ -1,0 +1,50 @@
+{
+  "name": "solid-forms",
+  "version": "0.1.0",
+  "description": "A Solidjs library for working with forms.",
+  "license": "Unlicense",
+  "sideEffects": false,
+  "scripts": {
+    "test": "jest --config './jest.config.ts'",
+    "build": "rollup -c rollup.config.js"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.4.0"
+  },
+  "dependencies": {
+    "fast-deep-equal": "^3.1.3",
+    "tslib": "^2.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.18.2",
+    "@babel/preset-env": "^7.18.2",
+    "@rollup/plugin-commonjs": "^22.0.0",
+    "babel-preset-solid": "^1.4.2",
+    "core-js": "^3.22.7",
+    "jest-environment-jsdom": "^28.1.0",
+    "rollup-preset-solid": "^1.4.0",
+    "solid-jest": "^0.2.0",
+    "solid-js": "^1.4.0",
+    "solid-testing-library": "^0.3.0",
+    "ts-node": "^10.8.0",
+    "type-fest": "^2.3.0"
+  },
+  "source": "src/public-api.ts",
+  "main": "dist/cjs/public-api.js",
+  "module": "dist/esm/public-api.js",
+  "types": "dist/types/public-api.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "solid": "./dist/source/public-api.js",
+      "import": "./dist/esm/public-api.js",
+      "browser": "./dist/esm/public-api.js",
+      "require": "./dist/cjs/public-api.js",
+      "node": "./dist/cjs/public-api.js"
+    }
+  }
+}

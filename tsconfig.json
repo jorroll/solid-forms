@@ -1,0 +1,29 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist/out-tsc",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "sourceMap": true,
+    "declaration": false,
+    "downlevelIteration": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "importHelpers": true,
+    "target": "ES2018",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "types": ["jest"],
+    // These JSX options need to be specified here so that the VSCode editor
+    // properly picks them up and uses them when editing `rx-controls-solid`
+    // "jsxImportSource": "solid-js",
+    "jsx": "preserve"
+  },
+  "exclude": ["./tmp/**", "./projects/*/build/**"]
+}

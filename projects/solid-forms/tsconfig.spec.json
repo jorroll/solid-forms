@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../out-tsc/spec",
+    "types": ["jest", "node"],
+    "module": "commonjs",
+    "emitDecoratorMetadata": true,
+    "allowJs": true,
+    "jsxImportSource": "solid-js",
+    "jsx": "preserve"
+  },
+  "files": [],
+  "include": ["./src/**/*.test.ts", "./src/**/*.d.ts", "../../setup-jest.ts"]
+}
