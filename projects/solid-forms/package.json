@@ -1,6 +1,6 @@
 {
   "name": "solid-forms",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Solidjs library for working with forms.",
   "license": "Unlicense",
   "sideEffects": false,
@@ -29,7 +29,6 @@
     "ts-node": "^10.8.0",
     "type-fest": "^2.3.0"
   },
-  "source": "src/public-api.ts",
   "main": "dist/cjs/public-api.js",
   "module": "dist/esm/public-api.js",
   "types": "dist/types/public-api.d.ts",
@@ -40,7 +39,6 @@
   ],
   "exports": {
     ".": {
-      "solid": "./dist/source/public-api.js",
       "import": "./dist/esm/public-api.js",
       "browser": "./dist/esm/public-api.js",
       "require": "./dist/cjs/public-api.js",
