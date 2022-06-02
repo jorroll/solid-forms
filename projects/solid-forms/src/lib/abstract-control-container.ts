@@ -105,6 +105,10 @@ export type ContainerControls<C> = C extends IAbstractControlContainer<
 export const AbstractControlContainerInterface =
   '@@AbstractControlContainerInterface_solidjs';
 
+/**
+ * Returns true if the provided object implements
+ * `IAbstractControlContainer`
+ */
 export function isAbstractControlContainer(
   object?: unknown
 ): object is IAbstractControlContainer {
@@ -126,8 +130,13 @@ export interface IAbstractControlContainer<
 
   readonly size: number;
 
-  /** Only returns values for `enabled` child controls. */
+  /** Only returns values for enabled child controls. */
   readonly value: ControlsValue<Controls>;
+
+  /**
+   * Returns values for both enabled and disabled child controls.
+   */
+  readonly rawValue: ControlsRawValue<Controls>;
 
   /** Will return true if `this.self.isValid` and `this.children.isValid` */
   readonly isValid: boolean;
@@ -195,18 +204,53 @@ export interface IAbstractControlContainer<
     /** Contains *all* `enabled` child control errors or `null` if there are none */
     readonly errors: ValidationErrors | null;
 
+    /**
+     * Mark all direct children as disabled. Use the `deep: true`
+     * option to instead mark all direct and indirect children
+     * as disabled.
+     */
     markDisabled(value: boolean, options?: { deep?: boolean }): void;
 
+    /**
+     * Mark all direct children as touched. Use the `deep: true`
+     * option to instead mark all direct and indirect children
+     * as touched.
+     */
     markTouched(value: boolean, options?: { deep?: boolean }): void;
 
+    /**
+     * Mark all direct children as dirty. Use the `deep: true`
+     * option to instead mark all direct and indirect children
+     * as dirty.
+     */
     markDirty(value: boolean, options?: { deep?: boolean }): void;
 
+    /**
+     * Mark all direct children as readonly. Use the `deep: true`
+     * option to instead mark all direct and indirect children
+     * as readonly.
+     */
     markReadonly(value: boolean, options?: { deep?: boolean }): void;
 
+    /**
+     * Mark all direct children as required. Use the `deep: true`
+     * option to instead mark all direct and indirect children
+     * as required.
+     */
     markRequired(value: boolean, options?: { deep?: boolean }): void;
 
+    /**
+     * Mark all direct children as submitted. Use the `deep: true`
+     * option to instead mark all direct and indirect children
+     * as submitted.
+     */
     markSubmitted(value: boolean, options?: { deep?: boolean }): void;
 
+    /**
+     * Mark all direct children as pending. Use the `deep: true`
+     * option to instead mark all direct and indirect children
+     * as pending.
+     */
     markPending(
       value: boolean,
       options?: { source?: ControlId; deep?: boolean }
@@ -292,6 +336,10 @@ export interface IAbstractControlContainer<
     ...args: any[]
   ): F | null;
 
+  /**
+   * Apply a partial update to the values of some children but
+   * not all.
+   */
   patchValue(value: unknown): void;
 
   setControls(controls: Controls): void;

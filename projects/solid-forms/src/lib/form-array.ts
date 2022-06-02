@@ -34,6 +34,10 @@ export interface IFormArray<
   push(control: Controls[number]): void;
 }
 
+/**
+ * Returns true if the provided object implements
+ * `IFormArray`
+ */
 export function isFormArray(object?: unknown): object is IFormArray {
   return (
     isAbstractControlContainer(object) &&
@@ -128,11 +132,14 @@ export function createFormArray<
     () =>
       (control as IFormArray<Controls, Data>).controls.map(
         (c) => c.rawValue
-      ) as ControlsRawValue<Controls>
+      ) as unknown as ControlsRawValue<Controls>
   );
 
   valueMemo = createMemo(
-    () => enabledControlsMemo().map((c) => c.value) as ControlsValue<Controls>
+    () =>
+      enabledControlsMemo().map(
+        (c) => c.value
+      ) as unknown as ControlsValue<Controls>
   );
 
   initComplete();

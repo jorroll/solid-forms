@@ -35,6 +35,10 @@ export interface IFormGroup<
   [FormGroupInterface]: true;
 }
 
+/**
+ * Returns true if the provided object implements
+ * `IFormGroup`
+ */
 export function isFormGroup(object?: unknown): object is IFormGroup {
   return (
     isAbstractControlContainer(object) &&

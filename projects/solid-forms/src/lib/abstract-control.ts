@@ -4,7 +4,7 @@
 
 export type ControlId = string | symbol;
 
-export type ValidatorFn = (value: any) => ValidationErrors | null;
+export type ValidatorFn<T = any> = (value: T) => ValidationErrors | null;
 
 export interface ValidationErrors {
   [key: string]: any;
@@ -16,6 +16,7 @@ export interface ValidationErrors {
 
 export const AbstractControlInterface = '@@AbstractControlInterface_solidjs';
 
+/** Returns true if the provided object implements `IAbstractControl` */
 export function isAbstractControl(
   object?: unknown
 ): object is IAbstractControl {
@@ -37,44 +38,66 @@ export interface IAbstractControl<
    */
   readonly id: ControlId;
 
+  /**
+   * The data property can store arbitrary custom data. Use the
+   * `setData` method on `IAbstractControl` to update it.
+   *
+   * The `data` property is, itself, an object. You can set individual
+   * keys on the data property with `setData` but you cannot reset
+   * or clear the whole object. This is intentional. A library
+   * maintainer can store private data within the `data` property
+   * using a symbol without fear of the user accidently erasing it.
+   */
   readonly data: Data;
 
   /**
-   * The value of the AbstractControl. This is an alias for `rawValue`.
+   * The value of the IAbstractControl. In an IAbstractControlContainer,
+   * `value` and `rawValue` have differences, but in a standard
+   * `IAbstractControl` `value` is an alias for `rawValue`.
    */
   readonly value: Value;
-  /** The value of the AbstractControl. */
+
+  /** The value of the IAbstractControl. */
   readonly rawValue: RawValue;
+
   /**
    * `true` if this control is disabled, false otherwise.
-   * This is an alias for `selfDisabled`.
+   * This is an alias for `self.isDisabled`.
    */
   readonly isDisabled: boolean;
 
   /**
    * `true` if this control is touched, false otherwise.
-   * This is an alias for `selfTouched`.
+   * This is an alias for `self.isTouched`.
    */
   readonly isTouched: boolean;
 
   /**
    * `true` if this control is dirty, false otherwise.
-   * This is an alias for `selfDirty`.
+   * This is an alias for `self.isDirty`.
    */
   readonly isDirty: boolean;
   /**
    * `true` if this control is readonly, false otherwise.
-   * This is an alias for `selfReadonly`.
+   * This is an alias for `self.isReadonly`.
    */
   readonly isReadonly: boolean;
   /**
    * `true` if this control is submitted, false otherwise.
-   * This is an alias for `selfSubmitted`.
+   * This is an alias for `self.isSubmitted`.
    */
   readonly isSubmitted: boolean;
   /**
    * `true` if this control is required, false otherwise.
-   * This is an alias for `selfRequired`.
+   * This is an alias for `self.isRequired`.
+   *
+   * Note that this property doesn't
+   * have any predefined meaning for IAbstractControls and it doesn't affect
+   * validation in any way. It is up to you to decide what meaning, if any,
+   * to give to this property and how to use it. For example, if you
+   * validated the control inside a `createEffect()` you could alter the
+   * validation based on whether the control was marked as `required` or
+   * not.
    */
   readonly isRequired: boolean;
 
@@ -82,19 +105,54 @@ export interface IAbstractControl<
    * Contains a `ValidationErrors` object if this control
    * has any errors. Otherwise contains `null`.
    *
-   * An alias for `selfErrors`.
+   * An alias for `self.errors`.
    */
   readonly errors: ValidationErrors | null;
+
+  /**
+   * *More advanced-ish*
+   *
+   * Contains a map of ControlId values and ValidationErrors.
+   * The errorsStore allows partitioning errors so that
+   * they can be associated with different sources and so
+   * that one source does not overwrite another source.
+   *
+   * The `self.errors` property gets its errors from the errorsStore.
+   */
   readonly errorsStore: ReadonlyMap<ControlId, ValidationErrors>;
 
+  /**
+   * A validator function that is run on value changes and which
+   * generates errors associated with the source "CONTROL_DEFAULT_SOURCE".
+   */
   readonly validator: ValidatorFn | null;
+
+  /**
+   * A map of ControlIds and ValidatorFns. The `validator`
+   * property is composed of all the validator functions in the
+   * `validatorStore`. The validatorStore allows you to change
+   * individual validator functions on the control without
+   * affecting other validator functions on the control.
+   *
+   * When you use the `setValidators` method, you are updating
+   * the validatorStore.
+   */
   readonly validatorStore: ReadonlyMap<ControlId, ValidatorFn>;
 
   /**
    * `true` if this control is pending, false otherwise.
-   * This is an alias for `selfPending`.
+   * This is an alias for `self.isPending`.
    */
   readonly isPending: boolean;
+
+  /**
+   * A set of ControlIds. `self.isPending` is true so long
+   * as `pendingStore.size > 0`. Because this is a set, you
+   * can track multiple pending "things" at once. This
+   * control will register as pending until all of the "things"
+   * have resolved. Use the `markPending()` method with
+   * the `source` option to update the pendingStore.
+   */
   readonly pendingStore: ReadonlySet<ControlId>;
 
   /**
@@ -104,23 +162,66 @@ export interface IAbstractControl<
    */
   readonly isValid: boolean;
 
+  /**
+   * The `self` object on an abstract control contains
+   * properties reflecting the controls personal state. On an
+   * IAbstractControlContainer, the personal state can differ
+   * from the control's state. For example, an
+   * IAbstractControlContainer will register as disabled if
+   * the control itself has been marked as disabled OR if
+   * all of it's children controls are disabled. Marking the
+   * control itself as disabled doesn't mark the children as
+   * disabled. On a standard IAbstractControl though,
+   * the "self" properties are the same as regular properties.
+   * I.e. `self.isInvalid` is the same as `isInvalid` on a
+   * standard IAbstractControl (actually, `isInvalid` is
+   * an alias for `self.isInvalid` on a standard control).
+   */
   readonly self: {
     /** `this.self.errors === null && !this.self.isPending` */
     readonly isValid: boolean;
+
     /** `true` if this control is disabled, false otherwise. */
     readonly isDisabled: boolean;
+
     /** `true` if this control is touched, false otherwise. */
     readonly isTouched: boolean;
-    /** `true` if this control is dirty, false otherwise. */
+
+    /**
+     * `true` if this control is dirty, false otherwise.
+     * Dirty can be thought of as, "Has the value changed?"
+     * Though the isDirty property must be manually set by
+     * the user (using `markDirty()`) and is not automatically
+     * updated.
+     */
     readonly isDirty: boolean;
-    /** `true` if this control is readonly, false otherwise. */
+    /**
+     * `true` if this control is readonly, false otherwise.
+     * This property does not have any predefined meeting for
+     * an IAbstractControl. You can decide if you want to give
+     * it meaning.
+     */
     readonly isReadonly: boolean;
+
     /** `true` if this control is submitted, false otherwise. */
     readonly isSubmitted: boolean;
-    /** `true` if this control is required, false otherwise. */
+
+    /**
+     * `true` if this control is required, false otherwise.
+     *
+     * Note that this property doesn't
+     * have any predefined meaning for IAbstractControls and it doesn't affect
+     * validation in any way. It is up to you to decide what meaning, if any,
+     * to give to this property and how to use it. For example, if you
+     * validated the control inside a `createEffect()` you could alter the
+     * validation based on whether the control was marked as `required` or
+     * not.
+     */
     readonly isRequired: boolean;
+
     /** `true` if this control is pending, false otherwise. */
     readonly isPending: boolean;
+
     /**
      * Contains a `ValidationErrors` object if this control
      * has any errors. Otherwise contains `null`.
@@ -128,18 +229,27 @@ export interface IAbstractControl<
     readonly errors: ValidationErrors | null;
   };
 
-  readonly status: 'DISABLED' | 'PENDING' | 'VALID' | 'INVALID';
+  /**
+   * If this control is disabled, the status is `"DISABLED"`,
+   * else if this control is pending, the status is `"PENDING"`,
+   * else if this control has any errors, the status is `"INVALID"`,
+   * else the status is `"VALID"`.
+   */
+  readonly status: 'DISABLED' | 'PENDING' | 'INVALID' | 'VALID';
 
   [AbstractControlInterface]: true;
 
+  /** set the control's value  */
   setValue(value: RawValue): void;
 
   /**
-   * If provided a `ValidationErrors` object or `null`, replaces the errors
-   * associated with the source ID.
+   * If provided a `ValidationErrors` object or `null`, replaces the errors.
+   * Optionally, provide a source ID and the change will be partitioned
+   * assocaited with the source ID. The default source is
+   * "CONTROL_DEFAULT_SOURCE".
    *
-   * If provided a `Map` object containing `ValidationErrors` keyed to source IDs,
-   * uses it to replace the `errorsStore` associated with this control.
+   * If you provide a `Map` object containing `ValidationErrors` keyed to source IDs,
+   * that will replace the `errorsStore` associated with this control.
    */
   setErrors(
     value: ValidationErrors | null | ReadonlyMap<ControlId, ValidationErrors>,
@@ -147,12 +257,12 @@ export interface IAbstractControl<
   ): void;
 
   /**
-   * If provided a `ValidationErrors` object, that object is merged with the
+   * If you provide a `ValidationErrors` object, that object is merged with the
    * existing errors associated with the source ID. If the error object has
    * properties = `null`, errors associated with those keys are deleted
    * from the `errorsStore`.
    *
-   * If provided a `Map` object containing `ValidationErrors` keyed to source IDs,
+   * If you provide a `Map` object containing `ValidationErrors` keyed to source IDs,
    * that object is merged with the existing `errorsStore`.
    */
   patchErrors(
@@ -163,7 +273,25 @@ export interface IAbstractControl<
   markTouched(value: boolean): void;
   markDirty(value: boolean): void;
   markReadonly(value: boolean): void;
+
+  /**
+   * Mark the control as required. Note that this property doesn't
+   * have any predefined meaning for IAbstractControls and it doesn't affect
+   * validation in any way. It is up to you to decide what meaning, if any,
+   * to give to this property and how to use it. For example, if you
+   * validated the control inside a `createEffect()` you could alter the
+   * validation based on whether the control was marked as `required` or
+   * not.
+   */
   markRequired(value: boolean): void;
+
+  /**
+   * Mark the control as disabled. This affect's the control's `status`
+   * property. Additionally, `IAbstractControlContainer's` ignore
+   * disabled children in many cases. For example, the `value` of a
+   * control container does not contain disabled children (if you want
+   * to see the value including disabled children, use `rawValue`).
+   */
   markDisabled(value: boolean): void;
   markSubmitted(value: boolean): void;
   markPending(
@@ -180,5 +308,15 @@ export interface IAbstractControl<
     options?: { source?: ControlId }
   ): void;
 
+  /**
+   * The data property can store arbitrary custom data. Use the
+   * `setData` method on `IAbstractControl` to update it.
+   *
+   * The `data` property is, itself, an object. You can set individual
+   * keys on the data property with `setData` but you cannot reset
+   * or clear the whole object. This is intentional. A library
+   * maintainer can store private data within the `data` property
+   * using a symbol without fear of the user accidently erasing it.
+   */
   setData<K extends keyof Data>(key: K, data: Data[K]): void;
 }

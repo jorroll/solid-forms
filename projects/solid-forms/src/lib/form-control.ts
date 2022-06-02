@@ -26,6 +26,10 @@ export interface IFormControl<
   [FormControlInterface]: true;
 }
 
+/**
+ * Returns true if the provided object implements
+ * `IFormControl`
+ */
 export function isFormControl(object?: unknown): object is IFormControl {
   return (
     isAbstractControl(object) &&
