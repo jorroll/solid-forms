@@ -133,7 +133,9 @@ export function withControl<
         )
     );
 
-    const controlClassList = () => createClassList(control(), prefix);
+    const controlClassList = createMemo(() =>
+      createClassList(control(), prefix)
+    );
 
     const Component = options.component;
 
