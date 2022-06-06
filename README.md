@@ -1,6 +1,6 @@
 # Solid Forms
 
-Solid Forms provides several form control objects useful for making working with forms easier.
+Solid Forms provides several form control objects useful for making working with forms easier. Demos and examples below.
 
 ```bash
 # solidjs
@@ -47,7 +47,7 @@ npm install solid-forms
 
 The basic building block of Solid Forms are FormControls (see `IFormControl` API). A FormControl is intended to model a single input element of a form. For example, an `<input />` element or a radio button group. You can use a FormControl to save the value of the input, to handle validation and track errors, to track whether the input has been touched, changed, submitted, etc. Importantly, the FormControl itself is just a [Solidjs `store` object](https://www.solidjs.com/docs/latest/api#using-stores) so all of it's properties are observable and you can easily respond to changes (e.g. with `createEffect()` or just using the control values inside of a component directly).
 
-For example ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-dyy5v3?file=src/Example.tsx)),
+For example ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-dyy5v3?file=src/TextInput.tsx)),
 
 ```tsx
 import { Show, mergeProps, type Component } from "solid-js";
@@ -90,7 +90,7 @@ export const TextInput: Component<{
 
 **But the _real power_ of FormControls comes from their composability with other controls such as FormGroups (see `IFormGroup` API) and FormArrays (see `IFormArray` API).**
 
-For example ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-mmmzfj?file=src/TextInput.tsx)),
+For example ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-mmmzfj?file=src/Example.tsx)),
 
 ```tsx
 import { Show, mergeProps, createEffect, type Component } from "solid-js";
