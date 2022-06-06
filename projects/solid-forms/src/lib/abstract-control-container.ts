@@ -140,7 +140,7 @@ export interface IAbstractControlContainer<
    */
   readonly rawValue: ControlsRawValue<Controls>;
 
-  /** Will return true if `this.self.isValid` and `this.children.isValid` */
+  /** Will return true if `this.self.isValid` and `this.children.areValid` */
   readonly isValid: boolean;
 
   /** Will return true if `this.self.isDisabled` or `this.children.areDisabled` */
@@ -149,16 +149,16 @@ export interface IAbstractControlContainer<
   /** Will return true if `this.self.isReadonly` or `this.children.areReadonly` */
   readonly isReadonly: boolean;
 
-  /** Will return true if `this.self.isRequired` or `this.children.areRequired` */
+  /** Will return true if `this.self.isRequired` or `this.child.isRequired` */
   readonly isRequired: boolean;
 
-  /** Will return true if `this.self.isPending` or `this.children.arePending` */
+  /** Will return true if `this.self.isPending` or `this.child.isPending` */
   readonly isPending: boolean;
 
-  /** Will return true if `this.self.isTouched` or `this.children.areTouched` */
+  /** Will return true if `this.self.isTouched` or `this.child.isTouched` */
   readonly isTouched: boolean;
 
-  /** Will return true if `this.self.isDirty` or `this.children.areDirty` */
+  /** Will return true if `this.self.isDirty` or `this.child.isDirty` */
   readonly isDirty: boolean;
 
   /** Will return true if `this.self.isSubmitted` or `this.children.areSubmitted` */
