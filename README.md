@@ -1,5 +1,7 @@
 # Solid Forms
 
+[![NPM version](https://flat.badgen.net/npm/v/solid-forms)](https://www.npmjs.com/package/solid-forms) [![Size when minified & gzipped](https://flat.badgen.net/bundlephobia/minzip/solid-forms)](https://bundlephobia.com/result?p=solid-forms) [![Actively maintained](https://flat.badgen.net/badge/Maintenance%20level/Actively%20Maintained/green)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
+
 Solid Forms provides several form control objects useful for making working with forms easier. Demos and examples below.
 
 ```bash
