@@ -29,9 +29,58 @@ export interface IWithControlOptions<
   component: Component<
     WithControlProps<Props, ControlFactory> & {
       control: ReturnType<ControlFactory>;
+      /**
+       * Accessor returning a Solidjs classList for common form
+       * control classes. By default it looks like:
+       *
+       * ```ts
+       * {
+       *   "sf-control-container": isAbstractControlContainer(control),
+       *   "sf-valid": control.isValid,
+       *   "sf-invalid": !control.isValid,
+       *   "sf-dirty": control.isDirty,
+       *   "sf-not-dirty": !control.isDirty,
+       *   "sf-touched": control.isTouched,
+       *   "sf-untouched": !control.isTouched,
+       *   "sf-pending": control.isPending,
+       *   "sf-not-pending": !control.isPending,
+       *   "sf-disabled": control.isDisabled,
+       *   "sf-enabled": !control.isDisabled,
+       *   "sf-editable": !control.isReadonly,
+       *   "sf-readonly": control.isReadonly,
+       *   "sf-optional": !control.isRequired,
+       *   "sf-required": control.isRequired,
+       *   "sf-submitted": control.isSubmitted,
+       *   "sf-not-submitted": !control.isSubmitted,
+       * }
+       * ```
+       *
+       * Usage example:
+       *
+       * ```tsx
+       * const MyInput = withControl({
+       *   controlFactory: () => { ... },
+       *   component: (props) => {
+       *     return (
+       *       <div classList={props.classList()}>
+       *         <input
+       *           value={props.control.value}
+       *           ...etc
+       *         />
+       *       </div>
+       *     )
+       *   }
+       * })
+       * ```
+       */
       controlClassList: Accessor<ReturnType<typeof createClassList>>;
     }
   >;
+  /**
+   * Supply a custom prefix instead of `"sf"` for the `controlClassList`
+   * property passed to the `component`.
+   */
+  classListPrefix?: string;
 }
 
 export type WithControlReturnType<
@@ -71,6 +120,8 @@ export function withControl<
 >(
   options: IWithControlOptions<Props, ControlFactory>
 ): WithControlReturnType<Props, ControlFactory> {
+  const prefix = options.classListPrefix || "sf";
+
   const wrappedComponent: WithControlReturnType<Props, ControlFactory> = (
     props
   ) => {
@@ -82,7 +133,7 @@ export function withControl<
         )
     );
 
-    const controlClassList = () => createClassList(control());
+    const controlClassList = () => createClassList(control(), prefix);
 
     const Component = options.component;
 
@@ -100,24 +151,24 @@ export function withControl<
   return wrappedComponent;
 }
 
-export function createClassList(control: IAbstractControl) {
+export function createClassList(control: IAbstractControl, prefix = "sf") {
   return {
-    "sf-control-container": isAbstractControlContainer(control),
-    "sf-valid": control.isValid,
-    "sf-invalid": !control.isValid,
-    "sf-dirty": control.isDirty,
-    "sf-not-dirty": !control.isDirty,
-    "sf-touched": control.isTouched,
-    "sf-untouched": !control.isTouched,
-    "sf-pending": control.isPending,
-    "sf-not-pending": !control.isPending,
-    "sf-disabled": control.isDisabled,
-    "sf-enabled": !control.isDisabled,
-    "sf-editable": !control.isReadonly,
-    "sf-readonly": control.isReadonly,
-    "sf-optional": !control.isRequired,
-    "sf-required": control.isRequired,
-    "sf-submitted": control.isSubmitted,
-    "sf-not-submitted": !control.isSubmitted,
+    [`${prefix}-control-container`]: isAbstractControlContainer(control),
+    [`${prefix}-valid`]: control.isValid,
+    [`${prefix}-invalid`]: !control.isValid,
+    [`${prefix}-dirty`]: control.isDirty,
+    [`${prefix}-not-dirty`]: !control.isDirty,
+    [`${prefix}-touched`]: control.isTouched,
+    [`${prefix}-untouched`]: !control.isTouched,
+    [`${prefix}-pending`]: control.isPending,
+    [`${prefix}-not-pending`]: !control.isPending,
+    [`${prefix}-disabled`]: control.isDisabled,
+    [`${prefix}-enabled`]: !control.isDisabled,
+    [`${prefix}-editable`]: !control.isReadonly,
+    [`${prefix}-readonly`]: control.isReadonly,
+    [`${prefix}-optional`]: !control.isRequired,
+    [`${prefix}-required`]: control.isRequired,
+    [`${prefix}-submitted`]: control.isSubmitted,
+    [`${prefix}-not-submitted`]: !control.isSubmitted,
   };
 }
