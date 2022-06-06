@@ -83,7 +83,7 @@ export const TextInput: Component<{
 };
 ```
 
-### But the _real power_ of FormControls comes from their composability with other controls such as FormGroups (see `IFormGroup` API) and FormArrays (see `IFormArray` API).
+**But the _real power_ of FormControls comes from their composability with other controls such as FormGroups (see `IFormGroup` API) and FormArrays (see `IFormArray` API).**
 
 For example,
 
@@ -136,13 +136,15 @@ Lets begin by looking at how to use FormControls to model individual form fields
 
 ### Creating a form control
 
+> [See IFormControl in the API section for all properties and methods](#iformcontrol).
+
 To model individual form fields, we'll use FormControls created via `createFormControl()`. We can create a FormControl with an initial value of `""` like so:
 
 ```ts
 const control = createFormControl("");
 ```
 
-This is the same as ([learn more about these options in the API reference](#createformcontrol)):
+That's the same as this ([learn more about these options in the API reference](#createformcontrol)):
 
 ```ts
 const control = createFormControl("", {
@@ -221,7 +223,7 @@ createRenderEffect(() => {
 </div>;
 ```
 
-[You can see all the IFormControl properties and methods in the API section below](#iformcontrol). Lets look at creating a reusable form field component with an input.
+[You can see all the IFormControl properties and methods in the API section](#iformcontrol). Lets look at creating a reusable form field component with an input.
 
 ### Creating a reusable form field input
 
@@ -429,9 +431,9 @@ Also note, when performing async validation you can mark a control as "pending" 
 
 ### Using a FormGroup
 
-> FormGroups implement the [`IAbstractControlContainer` interface](#iabstractcontrolcontainer) (which itself implements the [`IAbstractControl` interface](#iabstractcontrol)).
+> [See IFormGroup in the API section for all properties and methods](#iformgroup).
 
-To model a form (or fieldset) with multiple form fields, we'll use FormGroups created via `createFormGroup()`. A FormGroup has all of the properties that a FormControl has, but it also has additional properties like a `controls` property which contains the FormGroup's child controls.
+To model a form (or [fieldset](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset)) with multiple form fields, we'll use FormGroups created via `createFormGroup()`. A FormGroup has all of the properties that a FormControl has, but it also has additional properties like a `controls` property which contains the FormGroup's child controls.
 
 At it's simplest, we can create a FormGroup with no children and the default state.
 
@@ -636,11 +638,11 @@ To the unfamiliar, this might _look_ like we're clearing all errors on the FormG
 
 #### Using a FormArray
 
-> FormArrays implement the [`IAbstractControlContainer` interface](#iabstractcontrolcontainer) (which itself implements the [`IAbstractControl` interface](#iabstractcontrol)).
+> [See IFormArray in the API section for all properties and methods](#iformarray).
 
 As you might expect, FormArrays are very similar to FormGroups and are used to group multiple controls together. While a FormGroup groups multiple controls together using an object with named keys, a FormArray groups them together using an array.
 
-FormArrays behave very similarly to FormGroups but with the change that you're dealing with an array of child controls (rather than an object containing child controls). FormArray also has one additional method `push()` which adds a new child control to the end of the FormArray. Other than `push()`, FormArray and FormGroup have the same interface (which comes from `IAbstractControlContainer`). Read the [FormGroup section](#using-a-formgroup) to familiarize yourself with the `IAbstractControlContainer` interface.
+FormArrays behave very similarly to FormGroups but with the change that you're dealing with an array of child controls (rather than an object containing child controls). FormArray also has one additional method `push()` which adds a new child control to the end of the FormArray. Other than `push()`, FormArray and FormGroup have the same interface (which comes from the [`IAbstractControlContainer` interface](#iabstractcontrolcontainer)). Read the [FormGroup section](#using-a-formgroup) if you haven't yet since all of it also applies to FormArray.
 
 Here's an example using a FormArray:
 
