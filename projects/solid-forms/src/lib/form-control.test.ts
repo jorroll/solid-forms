@@ -79,15 +79,17 @@ describe('FormControl', () => {
           isDirty: true,
           isDisabled: true,
           errors: { error: true },
-          errorsStore: new Map([[DEFAULT_SOURCE, { error: true }]]),
           id: 'controlId',
           isPending: true,
-          pendingStore: new Set([DEFAULT_SOURCE]),
           isReadonly: true,
           isSubmitted: true,
           isTouched: true,
           validator: expect.any(Function),
-          validatorStore: new Map([[DEFAULT_SOURCE, expect.any(Function)]]),
+          self: {
+            errorsStore: new Map([[DEFAULT_SOURCE, { error: true }]]),
+            pendingStore: new Set([DEFAULT_SOURCE]),
+            validatorStore: new Map([[DEFAULT_SOURCE, expect.any(Function)]]),
+          },
         });
       });
     });
@@ -120,9 +122,11 @@ describe('FormControl', () => {
         isValid: false,
         status: 'INVALID',
         errors: { required: true },
-        errorsStore: new Map([[DEFAULT_SOURCE, { required: true }]]),
         validator: expect.any(Function),
-        validatorStore: new Map([[DEFAULT_SOURCE, expect.any(Function)]]),
+        self: {
+          errorsStore: new Map([[DEFAULT_SOURCE, { required: true }]]),
+          validatorStore: new Map([[DEFAULT_SOURCE, expect.any(Function)]]),
+        },
       });
 
       c.setValue('hi');
@@ -131,7 +135,9 @@ describe('FormControl', () => {
         value: 'hi',
         rawValue: 'hi',
         validator: expect.any(Function),
-        validatorStore: new Map([[DEFAULT_SOURCE, expect.any(Function)]]),
+        self: {
+          validatorStore: new Map([[DEFAULT_SOURCE, expect.any(Function)]]),
+        },
       });
     });
   });
@@ -157,7 +163,11 @@ describe('FormControl', () => {
         rawValue: 'invalidValue',
         isValid: false,
         errors: { invalidValid: true },
-        errorsStore: new Map([['myValidationService', { invalidValid: true }]]),
+        self: {
+          errorsStore: new Map([
+            ['myValidationService', { invalidValid: true }],
+          ]),
+        },
       });
 
       c.setValue('validValue');
@@ -167,7 +177,9 @@ describe('FormControl', () => {
         rawValue: 'validValue',
         isValid: true,
         errors: null,
-        errorsStore: new Map(),
+        self: {
+          errorsStore: new Map(),
+        },
       });
     });
 
@@ -197,10 +209,12 @@ describe('FormControl', () => {
         rawValue: 'invalidValue',
         isValid: false,
         errors: { mustBeLowercase: true, invalidValue: true },
-        errorsStore: new Map([
-          ['lowercaseValidationService', { mustBeLowercase: true }],
-          ['valueValidationService', { invalidValue: true }],
-        ]),
+        self: {
+          errorsStore: new Map([
+            ['lowercaseValidationService', { mustBeLowercase: true }],
+            ['valueValidationService', { invalidValue: true }],
+          ]),
+        },
       });
 
       c.setValue('validValue');
@@ -210,9 +224,11 @@ describe('FormControl', () => {
         rawValue: 'validValue',
         isValid: false,
         errors: { mustBeLowercase: true },
-        errorsStore: new Map([
-          ['lowercaseValidationService', { mustBeLowercase: true }],
-        ]),
+        self: {
+          errorsStore: new Map([
+            ['lowercaseValidationService', { mustBeLowercase: true }],
+          ]),
+        },
       });
 
       c.setValue('validvalue');
@@ -222,7 +238,9 @@ describe('FormControl', () => {
         rawValue: 'validvalue',
         isValid: true,
         errors: null,
-        errorsStore: new Map(),
+        self: {
+          errorsStore: new Map(),
+        },
       });
     });
   });

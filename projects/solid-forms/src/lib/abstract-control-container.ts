@@ -126,8 +126,10 @@ export interface IAbstractControlContainer<
     Data,
     ControlsValue<Controls>
   > {
+  /** Child controls associated with this container */
   readonly controls: Controls;
 
+  /** The number of controls associated with this container */
   readonly size: number;
 
   /** Only returns values for enabled child controls. */
@@ -259,124 +261,22 @@ export interface IAbstractControlContainer<
 
   [AbstractControlContainerInterface]: true;
 
-  get<A extends ControlsKey<Controls>>(a: A): Controls[A];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>
-  >(
-    a: A,
-    b: B
-  ): ContainerControls<Controls[A]>[B];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>,
-    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>
-  >(
-    a: A,
-    b: B,
-    c: C
-  ): ContainerControls<ContainerControls<Controls[A]>[B]>[C];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>,
-    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
-    D extends keyof ContainerControls<
-      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-    >
-  >(
-    a: A,
-    b: B,
-    c: C,
-    d: D
-  ): ContainerControls<
-    ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-  >[D];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>,
-    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
-    D extends keyof ContainerControls<
-      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-    >,
-    E extends keyof ContainerControls<
-      ContainerControls<
-        ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-      >[D]
-    >
-  >(
-    a: A,
-    b: B,
-    c: C,
-    d: D,
-    e: E
-  ): ContainerControls<
-    ContainerControls<
-      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-    >[D]
-  >[E];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>,
-    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
-    D extends keyof ContainerControls<
-      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-    >,
-    E extends keyof ContainerControls<
-      ContainerControls<
-        ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-      >[D]
-    >,
-    F extends IAbstractControl = IAbstractControl
-  >(
-    a: A,
-    b: B,
-    c: C,
-    d: D,
-    e: E,
-    ...args: any[]
-  ): F | null;
-
   /**
    * Apply a partial update to the values of some children but
    * not all.
    */
   patchValue(value: unknown): void;
 
+  /** sets the `controls` property */
   setControls(controls: Controls): void;
 
+  /** stores the provided control in `controls[key]` */
   setControl(key: unknown, control: unknown): void;
 
+  /**
+   * If provided a control value, removes the given control from
+   * `controls`. If provided a control key value, removes the
+   * control associated with the given key from `controls`.
+   */
   removeControl(key: unknown): void;
 }
-
-// /**
-//  * This exists because of limitations in typescript. It lets the "real"
-//  * AbstractControlContainer interface be less type safe while still
-//  * retaining the correct type information in FormArray and FormGroup. If
-//  * AbstractControlContainer looked like this (and it should), then
-//  * FormArray<AbstractControl[]> could not be assigned to AbstractControlContainer<any>
-//  * (and it should be able to be assigned to that).
-//  *
-//  * I think the issue arrises because Typescript doesn't seem to recognize that
-//  * Controls[ControlsKey<Controls>] is an AbstractControl.
-//  */
-// export interface PrivateAbstractControlContainer<
-//   Controls extends GenericControlsObject = any,
-//   Data = any
-// > extends AbstractControlContainer<Controls, Data> {
-//   // setControls(controls: Controls, options?: IControlEventOptions): void;
-//   setControl<N extends ControlsKey<Controls>>(
-//     name: N,
-//     control: Controls[N] | null,
-//     options?: IControlEventOptions
-//   ): string[];
-//   addControl<N extends ControlsKey<Controls>>(
-//     name: N,
-//     control: Controls[N],
-//     options?: IControlEventOptions
-//   ): string[];
-//   removeControl(
-//     name: ControlsKey<Controls>,
-//     options?: IControlEventOptions
-//   ): string[];
-// }

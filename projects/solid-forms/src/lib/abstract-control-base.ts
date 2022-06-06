@@ -122,6 +122,9 @@ export function createAbstractControlBase<
       get errors() {
         return selfErrorsMemo?.() ?? untilInit(null);
       },
+      errorsStore: new Map(),
+      pendingStore: new Set(),
+      validatorStore: new Map(),
     },
 
     get isDisabled() {
@@ -152,13 +155,9 @@ export function createAbstractControlBase<
       return this.self.errors;
     },
 
-    errorsStore: new Map(),
-
     get isPending() {
       return this.self.isPending;
     },
-
-    pendingStore: new Set(),
 
     get isValid() {
       return this.self.isValid;
@@ -171,8 +170,6 @@ export function createAbstractControlBase<
     get validator() {
       return validatorMemo?.() ?? untilInit(null);
     },
-
-    validatorStore: new Map(),
 
     markDisabled(input) {
       if (isEqual(this.self.isDisabled, input)) return;
@@ -210,9 +207,9 @@ export function createAbstractControlBase<
       if (typeof input === 'boolean') {
         const source = options?.source || DEFAULT_SOURCE;
 
-        if (this.pendingStore.has(source) === input) return;
+        if (this.self.pendingStore.has(source) === input) return;
 
-        newPendingStore = new Set(this.pendingStore);
+        newPendingStore = new Set(this.self.pendingStore);
 
         if (input) {
           newPendingStore.add(source);
@@ -220,20 +217,20 @@ export function createAbstractControlBase<
           newPendingStore.delete(source);
         }
       } else {
-        if (this.pendingStore === input) return;
+        if (this.self.pendingStore === input) return;
 
         newPendingStore = new Set(input);
       }
 
-      if (isEqual(this.pendingStore, newPendingStore)) return;
+      if (isEqual(this.self.pendingStore, newPendingStore)) return;
 
-      setControl('pendingStore', newPendingStore);
+      setControl('self', 'pendingStore', newPendingStore);
     },
 
     setErrors(input, options) {
       const source = options?.source || DEFAULT_SOURCE;
 
-      const existingStore = this.errorsStore;
+      const existingStore = this.self.errorsStore;
 
       let newErrorsStore: Map<ControlId, ValidationErrors>;
 
@@ -246,19 +243,23 @@ export function createAbstractControlBase<
         newErrorsStore = new Map(existingStore).set(source, input);
       }
 
-      if (isEqual(this.errorsStore, newErrorsStore)) return;
+      if (isEqual(this.self.errorsStore, newErrorsStore)) return;
 
-      setControl('errorsStore', newErrorsStore);
+      setControl('self', 'errorsStore', newErrorsStore);
     },
 
     patchErrors(input, options) {
-      const existingStore = this.errorsStore as Map<
+      const existingStore = this.self.errorsStore as Map<
         ControlId,
         ValidationErrors
       >;
 
       if (input instanceof Map) {
-        setControl('errorsStore', new Map([...existingStore, ...input]));
+        setControl(
+          'self',
+          'errorsStore',
+          new Map([...existingStore, ...input])
+        );
       } else {
         if (Object.keys(input).length === 0) return;
 
@@ -298,9 +299,9 @@ export function createAbstractControlBase<
           newErrorsStore.set(source, newErrors);
         }
 
-        if (isEqual(this.errorsStore, newErrorsStore)) return;
+        if (isEqual(this.self.errorsStore, newErrorsStore)) return;
 
-        setControl('errorsStore', newErrorsStore);
+        setControl('self', 'errorsStore', newErrorsStore);
       }
     },
 
@@ -313,7 +314,7 @@ export function createAbstractControlBase<
         newValidatorsStore = new Map(input);
       } else {
         newValidatorsStore = new Map(
-          this.validatorStore as Map<ControlId, ValidatorFn>
+          this.self.validatorStore as Map<ControlId, ValidatorFn>
         );
 
         const newValidator = composeValidators(
@@ -327,9 +328,9 @@ export function createAbstractControlBase<
         }
       }
 
-      if (isEqual(this.validatorStore, newValidatorsStore)) return;
+      if (isEqual(this.self.validatorStore, newValidatorsStore)) return;
 
-      setControl('validatorStore', newValidatorsStore);
+      setControl('self', 'validatorStore', newValidatorsStore);
     },
 
     setData(key, input) {
@@ -342,12 +343,14 @@ export function createAbstractControlBase<
   const initializer = () => {
     [control, setControl] = store();
 
-    selfIsPendingMemo = createMemo(() => control.pendingStore.size > 0);
+    selfIsPendingMemo = createMemo(() => control.self.pendingStore.size > 0);
 
     selfErrorsMemo = createMemo(() => {
-      return control.errorsStore.size === 0
+      return control.self.errorsStore.size === 0
         ? null
-        : Array.from(control.errorsStore.values()).reduce<ValidationErrors>(
+        : Array.from(
+            control.self.errorsStore.values()
+          ).reduce<ValidationErrors>(
             (p, errors) => ({
               ...p,
               ...errors,
@@ -367,9 +370,9 @@ export function createAbstractControlBase<
     });
 
     validatorMemo = createMemo(() => {
-      if (control.validatorStore.size === 0) return null;
+      if (control.self.validatorStore.size === 0) return null;
 
-      const validators = Array.from(control.validatorStore.values());
+      const validators = Array.from(control.self.validatorStore.values());
 
       return (c) => {
         const e = validators.reduce<ValidationErrors>((err, v) => {
@@ -387,10 +390,10 @@ export function createAbstractControlBase<
       on(
         () => control.validator?.(control.value) ?? null,
         (errors) => {
-          if (control.errorsStore.get(DEFAULT_SOURCE) === errors) return;
+          if (control.self.errorsStore.get(DEFAULT_SOURCE) === errors) return;
 
           const newErrorsStore = new Map(
-            control.errorsStore as Map<ControlId, ValidationErrors>
+            control.self.errorsStore as Map<ControlId, ValidationErrors>
           );
 
           if (errors) {
@@ -399,9 +402,9 @@ export function createAbstractControlBase<
             newErrorsStore.delete(DEFAULT_SOURCE);
           }
 
-          if (isEqual(control.errorsStore, newErrorsStore)) return;
+          if (isEqual(control.self.errorsStore, newErrorsStore)) return;
 
-          setControl('errorsStore', newErrorsStore);
+          setControl('self', 'errorsStore', newErrorsStore);
         }
       )
     );

@@ -22,7 +22,7 @@ import {
   IAbstractControlBaseOptions,
 } from './abstract-control-base';
 
-import { produce, SetStoreFunction, Store } from 'solid-js/store';
+import { SetStoreFunction, Store } from 'solid-js/store';
 import { Accessor, batch, createMemo } from 'solid-js';
 import { isEqual, mergeObj } from './util';
 import { PartialDeep } from 'type-fest';
@@ -299,26 +299,6 @@ export function createAbstractControlContainerBase<
           });
         });
       },
-    },
-
-    get<A extends IAbstractControl = IAbstractControl>(
-      ...args: any[]
-    ): A | null {
-      const that = this as unknown as IAbstractControlContainer;
-
-      if (args.length === 0) {
-        throw new Error('Missing arguments for AbstractControlContainer#get()');
-      } else if (args.length === 1) {
-        return that.controls[args[0]];
-      }
-
-      return args.reduce((prev: IAbstractControl | null, curr) => {
-        if (isAbstractControlContainer(prev)) {
-          return prev.get(curr);
-        }
-
-        return null;
-      }, that as IAbstractControl | null);
     },
 
     setControls(controls: Controls) {
