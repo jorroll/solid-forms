@@ -9,6 +9,8 @@ yarn add solid-forms
 npm install solid-forms
 ```
 
+_Note: Solid Forms is brand new and should be considered "beta" until the version release hits `1.0.0`. This means breaking changes can come in minor releases. We are following semantic versioning._
+
 ## Contents
 
 - [Getting Started](#getting-started)
