@@ -1,6 +1,6 @@
 {
   "name": "solid-forms",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "A Solidjs library for working with forms.",
   "license": "Unlicense",
   "sideEffects": false,
