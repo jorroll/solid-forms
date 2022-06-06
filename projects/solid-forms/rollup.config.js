@@ -5,6 +5,7 @@ import withSolid from "rollup-preset-solid";
 import commonjs from "@rollup/plugin-commonjs";
 
 export default withSolid({
+  input: "src/public-api.ts",
   targets: ["esm", "cjs", "jsx", "umd", "tsc"],
   plugins: [commonjs()],
   external: ["fast-deep-equal/es6"],
