@@ -9,10 +9,91 @@ yarn add solid-forms
 npm install solid-forms
 ```
 
-### Example:
+## Contents
+
+- [Getting Started](#getting-started)
+  - [Creating a form control](#creating-a-form-control)
+  - [Creating a reusable form field input](#creating-a-reusable-form-field-input)
+  - [Form validation and errors](#form-validation-and-errors)
+    - [Validator functions](#validator-functions)
+    - [Observe changes and manually set errors](#observe-changes-and-manually-set-errors)
+  - [Using a FormGroup](#using-a-formgroup)
+  - [The FormGroup "child", "children" and "self" props](#the-formgroup-"child"-"children"-and-"self"-props)
+  - [Using a FormArray](#using-a-formarray)
+    - [Creating controls asyncronously (i.e. `bindOwner()`)](#creating-controls-asyncronously-ie-bindowner)
+  - [Making reusable form components `withControl()`](#making-reusable-form-components-withcontrol)
+- [Examples](#examples)
+  - [Simple example with validation](#simple-example-with-validation)
+  - [Medium example](#medium-example)
+- [API](#api)
+  - [IAbstractControl](#iabstractcontrol)
+  - [IAbstractControlContainer](#iabstractcontrolcontainer)
+  - [IFormControl](#iformcontrol)
+    - [`createFormControl()`](#createformcontrol)
+  - [IFormGroup](#iformgroup)
+    - [`createFormGroup()`](#createformgroup)
+  - [IFormArray](#iformarray)
+    - [`createFormArray()`](#createformarray)
+  - [Helpers](#helpers)
+    - [`withControl()`](#withcontrol)
+    - [`bindOwner()`](#bindowner)
+
+## Getting Started
+
+The basic building block of Solid Forms are FormControls (see `IFormControl` API). A FormControl is intended to model a single input element of a form. For example, an `<input />` element or a radio button group. You can use a FormControl to save the value of the input, to handle validation and track errors, to track whether the input has been touched, changed, submitted, etc. Importantly, the FormControl itself is just a [Solidjs `store` object](https://www.solidjs.com/docs/latest/api#using-stores) so all of it's properties are observable and you can easily respond to changes (e.g. with `createEffect()` or just using the control values inside of a component directly).
+
+For example,
 
 ```tsx
-const ExampleForm: Component<{}> = () => {
+import { Show, mergeProps, type Component } from "solid-js";
+import { createFormControl } from "solid-forms";
+
+export const TextInput: Component<{
+  control?: IFormControl<string>;
+  name?: string;
+  type?: string;
+}> = (props) => {
+  // here we provide a default form control in case the user doesn't supply one
+  props = mergeProps({ control: createFormControl(""), type: "text" }, props);
+
+  return (
+    <div
+      classList={{
+        "is-invalid": !!props.control.errors,
+        "is-touched": props.control.isTouched,
+        "is-required": props.control.isRequired,
+      }}
+    >
+      <input
+        name={props.name}
+        type={props.type}
+        value={props.control.value}
+        oninput={(e) => {
+          props.control.setValue(e.currentTarget.value);
+        }}
+        onblur={() => props.control.markTouched(true)}
+        required={props.control.isRequired}
+      />
+
+      <Show when={props.control.isTouched && props.control.errors?.isMissing}>
+        <small>Answer required.</small>
+      </Show>
+    </div>
+  );
+};
+```
+
+### But the _real power_ of FormControls comes from their composability with other controls such as FormGroups (see `IFormGroup` API) and FormArrays (see `IFormArray` API).
+
+For example,
+
+```tsx
+import { Show, mergeProps, createEffect, type Component } from "solid-js";
+import { createFormGroup, createFormControl } from "solid-forms";
+// here we import the TextInput component we defined above
+import { TextInput } from "./TextInput";
+
+export const ExampleForm: Component<{}> = () => {
   const group = createFormGroup({
     name: createFormControl(""),
     email: createFormControl("", {
@@ -22,15 +103,17 @@ const ExampleForm: Component<{}> = () => {
     }),
   });
 
+  // This will automatically re-run whenever `group.isDisabled`, `group.isValid` or `group.value` change
   createEffect(() => {
     if (group.isDisabled || !group.isValid) return;
 
-    console.log("Current value", group.value);
+    console.log("Current group value", group.value);
   });
 
   const onSubmit = async () => {
-    if (!group.isValid) return;
+    if (group.isSubmitted || !group.isValid) return;
 
+    group.markSubmitted(true);
     // do stuff...
     // const { name, email } = group.value;
   };
@@ -47,320 +130,432 @@ const ExampleForm: Component<{}> = () => {
     </form>
   );
 };
+```
 
-const TextInput: Component<{
-  control: IFormControl<string>;
+Lets begin by looking at how to use FormControls to model individual form fields, then we'll learn how to use FormGroups and FormArrays to model forms and form fieldsets (i.e. partial forms).
+
+### Creating a form control
+
+To model individual form fields, we'll use FormControls created via `createFormControl()`. We can create a FormControl with an initial value of `""` like so:
+
+```ts
+const control = createFormControl("");
+```
+
+This is the same as ([learn more about these options in the API reference](#createformcontrol)):
+
+```ts
+const control = createFormControl("", {
+  id: Symbol("Control-1"),
+  data: undefined,
+  disabled: false,
+  touched: false,
+  dirty: false,
+  readonly: false,
+  submitted: false,
+  pending: false,
+  errors: null,
+  validators: undefined,
+});
+```
+
+If we want to set the value on our FormControl we can:
+
+```ts
+control.setValue("Hi");
+control.value; // "Hi"
+```
+
+We can also mark our FormControl as touched (or required, disabled, readonly, submitted, pending, or dirty).
+
+```ts
+control.markTouched(true);
+control.touched; // true
+control.markTouched(false); // you get the idea
+```
+
+We can manually add errors to our FormControl
+
+```ts
+control.errors; // null
+control.isValid; // true
+control.setErrors({ required: true });
+control.errors; // { required: true }
+control.isValid; // false
+control.patchErrors({ tooLong: "must be less than 5 characters" });
+control.errors; // { required: true, tooLong: "must be less than 5 characters" }
+```
+
+We can add a validation function (or functions) which will be run after every value change
+
+```ts
+control.value; // ""
+control.errors; // null
+control.setValidators((value) =>
+  typeof value === "string" && value.length === 0 ? { isMissing: true } : null
+);
+control.value; // ""
+control.errors; // { isMissing: true }
+control.setValue("Hi");
+control.errors; // null
+```
+
+Under-the-hood, FormControls are just [Solidjs stores](https://www.solidjs.com/docs/latest/api#createstore) so we also have the ability to observe any changes to those properties with Solidjs.
+
+```tsx
+createEffect(() => {
+  console.log("Value change: ", control.value);
+});
+
+// here we manually run validation inside of a render effect
+createRenderEffect(() => {
+  if (control.value.toLowerCase() !== control.value) {
+    control.setErrors({ mustBeLowercase: true });
+  } else {
+    control.setErrors(null);
+  }
+});
+
+<div classList={{ "is-invalid": !!control.errors }}>
+  <p>The control's current value is: {JSON.stringify(control.value)}</p>
+</div>;
+```
+
+[You can see all the IFormControl properties and methods in the API section below](#iformcontrol). Lets look at creating a reusable form field component with an input.
+
+### Creating a reusable form field input
+
+Lets revist our `TextInput` example from above
+
+```tsx
+import { Show, For, mergeProps, type Component } from "solid-js";
+import { createFormControl } from "solid-forms";
+
+export const TextInput: Component<{
+  control?: IFormControl<string>;
   name?: string;
   type?: string;
 }> = (props) => {
-  const control = () => props.control;
+  // here we provide a default form control in case the user doesn't supply one
+  props = mergeProps({ control: createFormControl(""), type: "text" }, props);
 
   return (
-    <>
+    <div
+      classList={{
+        "is-invalid": !!props.control.errors,
+        "is-touched": props.control.isTouched,
+        "is-required": props.control.isRequired,
+        "is-disabled": props.control.isDisabled,
+      }}
+    >
       <input
         name={props.name}
-        type={props.type || "text"}
-        value={control().value}
+        type={props.type}
+        value={props.control.value}
         oninput={(e) => {
-          control().setValue(e.currentTarget.value);
+          props.control.setValue(e.currentTarget.value);
         }}
-        onblur={() => control().markTouched(true)}
-        required={control().isRequired}
+        onblur={() => props.control.markTouched(true)}
+        required={props.control.isRequired}
+        disabled={props.control.isDisabled}
       />
 
-      <Show when={control().isTouched && control().errors?.isMissing}>
-        <small>Answer required.</small>
+      <Show when={props.control.isTouched && !props.control.isValid}>
+        <For each={Object.values(props.control.errors)}>
+          {(errorMsg: string) => <small>{errorMsg}</small>}
+        </For>
       </Show>
-    </>
+    </div>
   );
 };
 ```
 
-## Contents
-
-- [Getting Started](#getting-started)
-  - [Installation](#installation)
-  - [Building a form](#building-a-form)
-    - [Simple validation](#simple-validation)
-    - [Observing and syncing input changes](#observing-and-syncing-input-changes)
-    - [Grouping controls together](#grouping-controls-together)
-    - [Using a FormGroup](#using-a-formgroup)
-    - [The FormGroup "child", "children" and "self" props](#the-formgroup-"child"-"children"-and-"self"-props)
-    - [Using a FormArray](#using-a-formarray)
-    - [Creating controls asyncronously (i.e. `bindOwner()`)](#creating-controls-asyncronously-ie-bindowner)
-  - [Reusing form components](#reusing-form-components)
-    - [The `withControl()` helper](#the-withcontrol-helper)
-  - [Validation and errors](#validation-and-errors)
-    - [Validator functions](#validator-functions)
-    - [Observe changes and manually set errors](#observe-changes-and-manually-set-errors)
-- [Examples](#examples)
-  - [Simple example](#simple-example)
-  - [Simple example with validation](#simple-example-with-validation)
-  - [Medium example](#medium-example)
-- [API](#api)
-  - [IAbstractControl](#iabstractcontrol)
-  - [IAbstractControlContainer](#iabstractcontrolcontainer)
-  - [IFormControl](#iformcontrol)
-  - [IFormGroup](#iformgroup)
-  - [IFormArray](#iformarray)
-- [About](#about)
-
-## Getting Started
-
-### Installation
-
-First add Solid Forms to your project via
-
-```bash
-# solidjs
-yarn add solid-forms
-# or
-npm install solid-forms
-```
-
-### Building a form
-
-Solid Forms has three basic building blocks: `createFormControl()`, `createFormGroup()`, and `createFormArray()`. You'll use `createFormControl()` to create individual inputs and then you'll optionally group those inputs together into more complex forms using FormGroups or FormArrays.
-
-For example, if we wanted to create a simple standalone form for an email address, we could do the following:
+Breaking this example down: we'd like the ability for a parent component to pass in a FormControl for the `TextInput` to use, but we'd also like the `TextInput` to be usable on its own if the parent doesn't supply a `control` value. We can accomplish that just like any other Solidjs component using [`mergeProps` from the Solidjs core library](https://www.solidjs.com/docs/latest/api#mergeprops) to provide a default `control` prop value if the user doesn't supply one.
 
 ```tsx
-import { Show, type Component } from "solid-js";
-import { createFormControl } from "solid-forms";
-
-const ExampleComponent: Component<{}> = () => {
-  const control = createFormControl("", {
-    validators: (value: string) =>
-      value.length < 4 || !value.includes("@") ? { invalid: true } : null,
-  });
-
-  return (
-    <form>
-      <label for="email">Please provide your email address</label>
-
-      <input
-        name="email"
-        type="email"
-        required
-        value={control.value}
-        oninput={(e) => {
-          control.setValue(e.currentTarget.value);
-        }}
-        onblur={() => control.markTouched(true)}
-      />
-
-      <Show when={control.isTouched && !control.isValid}>
-        <small>Answer invalid.</small>
-      </Show>
-    </form>
-  );
-};
-```
-
-Let's break this example down...
-
-#### Simple validation
-
-Here we create the control with a default value of a blank string (`""`) and an optional validation function.
-
-```tsx
-const ExampleComponent: Component<{}> = () => {
-  const control = createFormControl("", {
-    validators: (value: string) =>
-      value.length < 4 || !value.includes("@") ? { invalid: true } : null,
-  });
+export const TextInput: Component<{
+  control?: IFormControl<string>;
+  name?: string;
+  type?: string;
+}> = (props) => {
+  props = mergeProps({ control: createFormControl(""), type: "text" }, props);
 
   // ...
 };
 ```
 
-This validation function will receive the control's new value on changes and is expected to either return `null` if there are no errors or return an object. The object needs to have keys but otherwise can be anything you choose. Here I've chosen a simple "invalid: true" entry, but you could use something like `invalid: "Answer invalid."` where `"Answer invalid."` is the error message you want to show the user. Or you could support errors in multiple languages via something like:
-
-```
-{
-  invalid: {
-    en: "Answer invalid.",
-    es: "Respuesta inválida.",
-    ...
-  }
-}
-```
-
-It's up to you to decide what the error entries mean. You can access errors via the `control.errors` prop. E.g. `control.errors?.invalid` or `control.errors?.invalid.en`.
-
-#### Observing and syncing input changes
-
-Here we wire up our FormControl to the input so that it responds to changes appropriately.
+Since FormControl (and FormGroups and FormArrays) are just `Solidjs stores` under-the-hood, we can easily use the [core `classList` prop](https://www.solidjs.com/docs/latest/api#classlist) to add css classes to our `TextInput` if it is invalid, touched, required, or disabled.
 
 ```tsx
-return (
-  <form>
-    <label for="email">Please provide your email address</label>
+  // ...
 
-    <input
-      name="email"
-      type="email"
-      required
-      value={control.value}
-      oninput={(e) => {
-        control.setValue(e.currentTarget.value);
+  return (
+    <div
+      classList={{
+        "is-invalid": !!props.control.errors,
+        "is-touched": props.control.isTouched,
+        "is-required": props.control.isRequired,
+        "is-disabled": props.control.isDisabled,
       }}
-      onblur={() => control.markTouched(true)}
-    />
+    >
+```
 
-    <Show when={control.isTouched && !control.isValid}>
-      <small>Must provide valid email.</small>
-    </Show>
-  </form>
+We set the underlying `<input />` element to be equal to the FormControl's value (`value={props.control.value}`), we react to input value changes and update the FormControl's value (`props.control.setValue(e.currentTarget.value)`), we mark the control as touched on blur events, and we setup the input to be required and disabled if the FormControl is required or disabled.
+
+```tsx
+<input
+  name={props.name}
+  type={props.type}
+  value={props.control.value}
+  oninput={(e) => {
+    props.control.setValue(e.currentTarget.value);
+  }}
+  onblur={() => props.control.markTouched(true)}
+  required={props.control.isRequired}
+  disabled={props.control.isDisabled}
+/>
+```
+
+Finally, we decide to show errors associated with this FormControl if the control isn't valid AND if the control has been touched. When this happens, we show all the error messages associated with the control.
+
+```tsx
+<Show when={props.control.isTouched && !props.control.isValid}>
+  <For each={Object.values(props.control.errors)}>
+    {(errorMsg: string) => <small>{errorMsg}</small>}
+  </For>
+</Show>
+```
+
+### Form validation and errors
+
+Validating form data and working with errors is a core part of handling user input. The are two primary ways of validating data in Solid Forms. The simple but more limited approach is to use validator functions. The more flexible and powerful approach is to just use Solidjs built-ins like `createEffect()` to observe control changes and then `setErrors()` and `patchErrors()` on a control as appropriate.
+
+#### Validator functions
+
+Validator functions are optional functions you can provide to a control which are run whenever the control's value changes and either return `null` (if there are no errors) or return an object with key-value entries if there are errors.
+
+```ts
+import { type ValidatorFn } from "solid-forms";
+
+const requiredValidator: ValidatorFn = (value: string) =>
+  value.length === 0 ? { isMissing: true } : null;
+
+const lowercaseValidator: ValidatorFn = (value: string) =>
+  value.toLowerCase() !== value ? { isNotLowercase: true } : null;
+
+// You can also create controls with validator functions
+const control = createFormControl("", {
+  validators: [requiredValidator, lowercaseValidator],
+});
+```
+
+In this example, we provide a validator function that returns an error if the control's value is length `0` and a separate function which errors if the input string is not all lowercase. If we provide multiple validator functions to a control, all validator functions will be run on every change and their errors will be merged together.
+
+You can update the validator function of a control with `control.setValidators()`.
+
+#### Observe changes and manually set errors
+
+Validator functions are a nice and quick way to add validation to your controls, but a more powerful approach is to observe control changes and manually set errors. With this approach, we have access to the full array of control properties which we can include in our validation logic (validator functions just have access to the control's value).
+
+For example:
+
+```ts
+const control = createFormControl("");
+
+createRenderEffect(() => {
+  if (control.value.includes("@")) {
+    control.setErrors({ mustNotIncludeSymbol: "Cannot include '@' symbol." });
+  } else {
+    control.setErrors(null);
+  }
+});
+```
+
+Here we observe control value changes and set an error if the value includes an `"@"` symbol or else clear the errors (to indicate that the value is valid).
+
+If we have multiple different validation effects, we should use the `source` property of `control.setErrors()` and `control.patchErrors()` to partition the errors associated with each effect.
+
+For example:
+
+```ts
+const control = createFormControl("");
+
+createRenderEffect(() => {
+  const source = "@ validator";
+
+  if (control.value.includes("@")) {
+    control.setErrors(
+      { mustNotIncludeSymbol: "Cannot include '@' symbol." },
+      { source }
+    );
+  } else {
+    control.setErrors(null, { source });
+  }
+});
+
+const source = Symbol("Max length validator");
+
+createRenderEffect(() => {
+  if (control.value.length > 10) {
+    control.setErrors(
+      { tooLong: "Cannot be more than 10 characters." },
+      { source }
+    );
+  } else {
+    control.setErrors(null, { source });
+  }
+});
+```
+
+Here when we use `control.setErrors()` and also provide the `source` option, we will only clear or overwrite existing errors that were also set by the same "source". Another way we _could_ have accomplished this would be by using `control.patchErrors()`. The patchErrors method _merges_ its changes into the existing `control.errors` property, rather than replacing the existing errors. If you pass an errors object with a key who's value is `null`, then that key will be deleted from the control errors.
+
+For example:
+
+```ts
+createRenderEffect(() => {
+  if (control.value.includes("@")) {
+    control.patchErrors({ mustNotIncludeSymbol: "Cannot include '@' symbol." });
+  } else {
+    control.patchErrors({ mustNotIncludeSymbol: null });
+  }
+});
+```
+
+However, in this case using `control.patchErrors()` isn't as good an approach as using the "source" option. An accidental use of `control.setErrors()` elsewhere would still overwrite this render effect's validation (which wouldn't happen if you used "source").
+
+Also note, we're using `createRenderEffect()` here (rather than `createEffect()`) since validation and errors are likely to affect the DOM (by displaying errors to the user).
+
+Also note, when performing async validation you can mark a control as "pending" via `control.markPending(true)` to indicate that there is pending validation. `control.isValid` is only true if the control both doesn't have any errors and is also not pending. The `control.markPending()` method also accepts a `source` option for partitioning the pending state of different validation effects. A control will be considered pending so long as any "source" is still pending.
+
+### Using a FormGroup
+
+> FormGroups implement the [`IAbstractControlContainer` interface](#iabstractcontrolcontainer) (which itself implements the [`IAbstractControl` interface](#iabstractcontrol)).
+
+To model a form (or fieldset) with multiple form fields, we'll use FormGroups created via `createFormGroup()`. A FormGroup has all of the properties that a FormControl has, but it also has additional properties like a `controls` property which contains the FormGroup's child controls.
+
+At it's simplest, we can create a FormGroup with no children and the default state.
+
+```ts
+const group = createFormGroup();
+```
+
+This is the same as:
+
+```ts
+const group = createFormGroup(
+  {},
+  {
+    id: Symbol("Control-1"),
+    data: undefined,
+    disabled: false,
+    touched: false,
+    dirty: false,
+    readonly: false,
+    submitted: false,
+    pending: false,
+    errors: null,
+    validators: undefined,
+  }
 );
 ```
 
-We set the input element's value to the control's value. We then subscribe to `input` events for the element and set the control's value to the input's new value on every change. We also want to mark our controls as "touched" on blur events. We decide to only show an error message if the control is both invalid and has been marked as `isTouched`. Under the hood, `createFormControl` leans on Solidjs' [`createStore()` utility](https://www.solidjs.com/docs/latest/api#createstore) for all the heavy lifting. Because of this, all control properties are observable just like a [Solidjs store](https://www.solidjs.com/docs/latest/api#using-stores) is. When the control's `value` or `isTouched` or `isValid` properties change, this component will update automatically.
+If we want to add two child FormControls representing a person's name to our FormGroup we could:
 
-Just like the Solidjs store object, this results in fine grained reactivity. Only properties that are observed (i.e. `value` or `isTouched` or `isValid`) are processed by the browser and changes are only run when these properties update.
+```ts
+group.setControl("firstName", createFormControl(""));
+group.controls; // { firstName: IFormControl<string> }
+group.value; // { firstName: "" }
 
-#### Grouping controls together
-
-Most forms will have multiple parts and those parts can have subparts. We can group FormControls together using FormGroups and FormArrays. I expect most forms will be made using a FormGroup. Lets look at an example:
-
-```tsx
-import { Show, type Component } from "solid-js";
-import {
-  createFormGroup,
-  createFormControl,
-  type IFormControl,
-} from "solid-forms";
-
-const MyValidators = {
-  required: (value: string) =>
-    value.length === 0 ? { isMissing: "Answer required." } : null,
-  email: (value: string) =>
-    value.length > 0 && !value.includes("@")
-      ? { invalid: "Invalid email." }
-      : null,
-};
-
-const ExampleForm: Component<{}> = () => {
-  const group = createFormGroup({
-    name: createFormControl("", {
-      validators: MyValidators.required,
-    }),
-    email: createFormControl("", {
-      validators: [MyValidators.required, MyValidators.email],
-    }),
-  });
-
-  const nameControl = () => group.controls.name;
-  const emailControl = () => group.controls.email;
-
-  const onSubmit = async () => {
-    if (!group.isValid || group.isSubmitted) return;
-    // do stuff...
-    // const { name, email } = group.value;
-    // ...
-    // group.markSubmitted(true);
-  };
-
-  return (
-    <form onSubmit={onSubmit}>
-      <label for="name">Your name</label>
-      <input
-        name="name"
-        required
-        value={nameControl().value}
-        oninput={(e) => {
-          nameControl().setValue(e.currentTarget.value);
-        }}
-        onblur={() => nameControl().markTouched(true)}
-      />
-
-      <Show when={nameControl().isTouched && !nameControl().isValid}>
-        <small>Answer required.</small>
-      </Show>
-
-      <label for="email">Your email address</label>
-      <input
-        name="email"
-        type="email"
-        required
-        value={emailControl().value}
-        oninput={(e) => {
-          emailControl().setValue(e.currentTarget.value);
-        }}
-        onblur={() => emailControl().markTouched(true)}
-      />
-
-      <Show when={emailControl().isTouched && !emailControl().isValid}>
-        <For each={Object.values(emailControl().errors)}>
-          {(errorMsg) => <small>{errorMsg}</small>}
-        </For>
-      </Show>
-
-      <button disabled={!group.isValid}>Submit</button>
-    </form>
-  );
-};
+group.setControl("lastName", createFormControl(""));
+group.controls; // { firstName: IFormControl<string>, lastName: IFormControl<string> }
+group.value; // { firstName: "", lastName: "" }
 ```
 
-You might be noticing some annoying duplication in our code here. Let's set that problem aside for a moment and look at what's happening in this example...
+We can also set all the FormGroup's controls at once with
 
-#### Using a FormGroup
+```ts
+group.setControls({
+  firstName: createFormControl("John"),
+  lastName: createFormControl("Carroll"),
+});
 
-Here we've used the `createFormGroup()` function to create a FormGroup which has child `name` and `email` FormControls (as you might expect, FormGroups can also have nested `FormGroups` or `FormArrays`).
+group.controls; // { firstName: IFormControl<string>, lastName: IFormControl<string> }
+group.value; // { firstName: "John", lastName: "Carroll" }
 
-```tsx
-const ExampleForm: Component<{}> = () => {
-  const group = createFormGroup({
-    name: createFormControl("", {
-      validators: MyValidators.required,
-    }),
-    email: createFormControl("", {
-      validators: [MyValidators.required, MyValidators.email],
-    }),
-  });
-
-  const nameControl = () => group.controls.name;
-  const emailControl = () => group.controls.email;
-
-  // ...
-};
+group.removeControl("firstName");
+group.controls; // { lastName: IFormControl<string> }
+group.value; // { lastName: "Carroll" }
 ```
 
-While FormControls implement the [`IAbstractControl` interface](#iabstractcontrol) (which you can learn more about in the [API section](#api), below), FormGroups implement the [`IAbstractControlContainer` interface](#iabstractcontrolcontainer) (which itself implements the `IAbstractControl` interface). A FormGroup has all of the properties that a FormControl has, but it also has additional properties like a `controls` property which contains the FormGroups child controls. We can access these controls via `group.control["control name"]`.
+If we want to set the value of our FormGroup we can:
 
-[As before](#observing-and-syncing-input-changes), the FormGroup is powered by a Solidjs store and all the properties are observable. This means we can observe changes to the `controls` property. Each value in the `controls` property is actually a FormControl object, so we obviously can observe all of their changes as well.
+```ts
+group.setValue({ firstName: "Sandy", lastName: "Smith" });
+group.value; // { firstName: "Sandy", lastName: "Smith" }
+```
 
-**/Start slight digression**
+Note that FormGroup's derive their value from the value of their _enabled_ child controls. When you use `group.setValue()` you are really setting the values of the FormGroup's children.
 
-> Because accessing each control via `group.controls.name` is verbose and repetitive, I chose to create a helper function to access each child control (i.e. `const nameControl = () => group.controls.name`). In javascript, [a function like this is called a "thunk"](https://reactgo.com/thunks-javascript/#definition-of-thunk). Anywhere a signal is expected in Solidjs, you can replace that signal with a thunk which returns a signal value (this isn't specific to Solid Forms, this is just a Solidjs feature you may not be familiar with).
->
-> For example, this works just fine:
->
-> ```tsx
-> const [value, setValue] = createSignal();
->
-> const valueAlias = () => value();
->
-> return <p>{valueAlias()}</p>;
-> ```
->
-> You might think you could do something like this:
->
-> ```tsx
-> const [value, setValue] = createSignal({ nestedValue: true });
->
-> const { nestedValue } = value();
->
-> return <p>{nestedValue}</p>;
-> ```
->
-> [But you can't. This breaks reactivity in Solidjs.](https://www.solidjs.com/guides/reactivity#considerations) Hence, using thunks can be handy to reduce repitition.
+```ts
+group.controls.firstName.value; // "Sandy"
+group.controls.lastName.value; // "Smith"
+```
 
-**/End digression**
+You can use `patchValue()` to update the value of some controls but not others
 
-In a FormGroup, some properties are derived from the children controls and other properties are hybrids of the children state as well as the FormGroup's personal state. For example, the `value` of our FormGroup can be thought of as `{ name: nameControl().value, email: emailControl().value }` except disabled child controls are removed from the FormGroup's value. That is, if we disabled the "name" control (e.g. `nameControl().markDisabled(true)`) then the FormGroup's value would update to be `{ email: emailControl().value }`.
+```ts
+group.patchValue({ lastName: "Carroll" });
+group.value; // { firstName: "Sandy", lastName: "Carroll" }
+group.controls.firstName.value; // "Sandy"
+group.controls.lastName.value; // "Carroll"
+```
 
-If we want to get the value of the FormGroup ignoring the disabled status of children, we can use the `rawValue` property. This property can be thought of as `{ name: nameControl().rawValue, email: emailControl().rawValue }` and will continue to return the rawValue of all children, even if some are disabled. Like all properties, a FormGroup's value is deeply observable.
+Since a FormGroup's value is equal to the value of all their enabled children, is a child is disabled then it's value will be excluded from `group.value`.
+
+```ts
+group.value; // { firstName: "Sandy", lastName: "Carroll" }
+group.controls.firstName.markDisabled(true);
+group.value; // { lastName: "Carroll" }
+```
+
+If we'd like to get the FormGroup's value ignoring the disabled status of children, we can use the `group.rawValue` property.
+
+```ts
+group.rawValue; // { firstName: "Sandy", lastName: "Carroll" }
+group.controls.firstName.markDisabled(true);
+group.value; // { lastName: "Carroll" }
+group.rawValue; // { firstName: "Sandy", lastName: "Carroll" }
+```
+
+FormGroups can have other FormGroups (or FormArrays) as children.
+
+```ts
+group.setControl(
+  "addresses",
+  createFormArray([
+    createFormGroup({
+      street: createFormControl(""),
+      city: createFormControl(""),
+      state: createFormControl(""),
+      zip: createFormControl(""),
+    }),
+  ])
+);
+
+group.value;
+// {
+//   addresses: [
+//     {
+//       street: "",
+//       city: "",
+//       state: "",
+//       zip: "" ,
+//     },
+//   ],
+// }
+```
+
+We also have the ability to observe any properties of the FormGroup with Solidjs as well as changes to those properties
 
 For example:
 
@@ -383,15 +578,46 @@ createRenderEffect(() => {
 
 Here, we're using a render effect to create a custom validator for the FormGroup. This effect is automatically subscribing to some changes under-the-hood (`group.children.areValid`, `group.value.email`, `group.value.name`) and will automatically re-evaluate when these props change. Lets look at what's happening...
 
-#### The FormGroup "child", "children" and "self" props
-
-Both FormControls and FormGroups (and FormArrays) have a `self` prop which itself is an object containing properties like `isValid`, `isDisabled`, `isTouched`, etc. In a FormControl, `control.isValid` is just an alias for `control.self.isValid` (same for `control.isTouched`, etc). In a FormGroup though, the two properties are different and the `self` object contains state local to that FormGroup.
-
-For example, if you do `group.markTouched(true)` on the FormGroup, that updates `group.self.isTouched` to true but it doesn't affect the state of the FormGroup's children. Meanwhile, `group.isTouched` is actually a getter function equal to `group.self.isTouched || group.children.areTouched`. The `group.children.areTouched` property is also a memoized getter (it uses `createMemo()` under-the-hood) which is true if every child is touched (it's `false` if there are no children). So a FormGroup is "touched" if _either_ the FormGroup itself has been `markTouched(true)` or if all of the FormGroup's children have been `markTouched(true)`. But if you just want to see if the FormGroup, itself, has been touched, then you can use `group.self.isTouched`. Meanwhile, `group.child.isTouched` will return `true` if _any_ child control has been touched. As expected, all of these properties are observable.
+### The FormGroup "child", "children" and "self" props
 
 > You can view the full [`IFormGroup` API reference](#iformgroup) for all of the `self`, `children`, and `child` properties.
 
-In our last example, we used `group.setErrors()` in a way you may have found surprising:
+Both FormControls and FormGroups (and FormArrays) have a `self` prop which itself is an object containing properties like `isValid`, `isDisabled`, `isTouched`, etc. In a FormControl, `control.isValid` is just an alias for `control.self.isValid` (same for `control.isTouched`, etc). In a FormGroup though, the two properties are different and the `self` object contains state local to that FormGroup.
+
+For example, if you do `group.markTouched(true)` on the FormGroup, that updates `group.self.isTouched` to true but it doesn't affect the state of the FormGroup's children.
+
+```ts
+group.markTouched(true);
+group.isTouched; // true
+group.self.isTouched; // true
+group.child.isTouched; // false
+group.children.areTouched; // false
+group.controls.firstName.isTouched; // false
+group.controls.lastName.isTouched; // false
+```
+
+Meanwhile, `group.isTouched` is actually a getter function equal to `group.self.isTouched || group.children.areTouched`. The `group.children.areTouched` property is also a memoized getter (its created internally with `createMemo()`) which is true if every child is touched (it's `false` if there are no children). So a FormGroup is "touched" if _either_ the FormGroup itself has been `markTouched(true)` or if all of the FormGroup's children have been `markTouched(true)`. But if you just want to see if the FormGroup, itself, has been touched, then you can use `group.self.isTouched`. Meanwhile, `group.child.isTouched` will return `true` if _any_ child control has been touched. As expected, all of these properties are observable.
+
+```ts
+group.isTouched; // false
+group.self.isTouched; // false
+group.child.isTouched; // false
+group.children.areTouched; // false
+
+group.controls.firstName.markTouched(true);
+group.isTouched; // false
+group.self.isTouched; // false
+group.child.isTouched; // true
+group.children.areTouched; // false
+
+group.controls.lastName.markTouched(true);
+group.isTouched; // true
+group.self.isTouched; // false
+group.child.isTouched; // true
+group.children.areTouched; // true
+```
+
+Above, we gave an example that used `group.setErrors()` in a way you may have found surprising:
 
 ```tsx
 createRenderEffect(() => {
@@ -404,21 +630,17 @@ createRenderEffect(() => {
 });
 ```
 
-To the unfamiliar, this might _look_ like we're clearing all errors on the FormGroup is any children are invalid. And we are doing that, but clearing errors on the FormGroup doesn't necessarily clear the `group.errors` property. This is because `group.errors` is a getter function equal to `{ ...group.children.errors, ...group.self.errors }` or `null` if there are no children errors or self errors. Using `group.setErrors()` sets `self.errors`. So what we're doing here is saying, "If not all children are valid, clear the FormGroups errors and don't run validation." Else, check to see if the part of the email address before the "@" symbol matches the "name" value exactly. If it doesn't, then we set `group.self.errors` else we clear any existing errors.
+To the unfamiliar, this might _look_ like we're clearing all errors on the FormGroup if any children are invalid. In reality, `group.errors` is a getter function equal to `{ ...group.children.errors, ...group.self.errors }` or `null` if there are no children errors or self errors. Using `group.setErrors()` sets `self.errors` but it doesn't affect FormGroup children.
 
-```ts
-const firstPartOfEmail = group.value.email.split("@")[0];
-
-if (group.value.name !== firstPartOfEmail) {
-  group.setErrors({ nameAndEmailMismatch: true });
-} else {
-  group.setErrors(null);
-}
-```
+> You can view the full [`IFormGroup` API reference](#iformgroup) for all of the `self`, `children`, and `child` properties.
 
 #### Using a FormArray
 
-[Like FormGroups](#using-a-formgroup), FormArrays implement the [`IAbstractControlContainer` interface](#iabstractcontrolcontainer) (which itself implements the [`IAbstractControl` interface](#iabstractcontrol)). As you might expect, FormArrays are very similar to FormGroups and are used to group multiple controls together. While a FormGroup groups multiple controls together using an object with named keys, a FormArray groups them together using an array. FormArrays behave very similarly to FormGroups but with the change that you're dealing with an array of child controls (rather than an object containing child controls). FormArray also has one additional method `push()` which adds a new child control to the end of the FormArray. Other than `push()`, FormArray and FormGroup have the same interface (which comes from `IAbstractControlContainer`). Read the FormGroup section to familiarize yourself with the `IAbstractControlContainer` interface.
+> FormArrays implement the [`IAbstractControlContainer` interface](#iabstractcontrolcontainer) (which itself implements the [`IAbstractControl` interface](#iabstractcontrol)).
+
+As you might expect, FormArrays are very similar to FormGroups and are used to group multiple controls together. While a FormGroup groups multiple controls together using an object with named keys, a FormArray groups them together using an array.
+
+FormArrays behave very similarly to FormGroups but with the change that you're dealing with an array of child controls (rather than an object containing child controls). FormArray also has one additional method `push()` which adds a new child control to the end of the FormArray. Other than `push()`, FormArray and FormGroup have the same interface (which comes from `IAbstractControlContainer`). Read the [FormGroup section](#using-a-formgroup) to familiarize yourself with the `IAbstractControlContainer` interface.
 
 Here's an example using a FormArray:
 
@@ -517,222 +739,9 @@ For a longer (but still summarized) explaination of why this is needed and what 
 >
 > In the future, it seems possible that Solidjs will choose to provide this help directly within the core library.
 
-### Reusing form components
+### Making reusable form components `withControl()`
 
-So far, many of the examples have involved a fair amount of repitition. In that sense, they are unrealistic. We want dry code! In practice, I expect you will be creating your own reusable input components and form partials and, I think, this is where Solid Forms _really shines!_
-
-There are two main ways you can make reusable form inputs. The first option is to handle it like any other component in your app, and this is just fine.
-
-Example:
-
-```tsx
-import { Show, type Component } from "solid-js";
-import {
-  createFormGroup,
-  createFormControl,
-  type IFormControl,
-} from "solid-forms";
-
-const ExampleForm: Component<{}> = () => {
-  const group = createFormGroup({
-    name: createFormControl(""),
-    email: createFormControl(""),
-  });
-
-  const controls = () => group.controls;
-
-  return (
-    <form>
-      <label for="name">Your name</label>
-      <TextInput name="name" control={controls().name} />
-
-      <label for="email">Your email address</label>
-      <TextInput name="email" type="email" control={controls().email} />
-
-      <button>Submit</button>
-    </form>
-  );
-};
-
-const TextInput: Component<{
-  control: IFormControl<string>;
-  name?: string;
-  type?: string;
-}> = (props) => {
-  const control = () => props.control;
-
-  return (
-    <>
-      <input
-        name={props.name}
-        type={props.type || "text"}
-        value={control().value}
-        oninput={(e) => {
-          control().markDirty(true);
-          control().setValue(e.currentTarget.value);
-        }}
-        onblur={() => control().markTouched(true)}
-        disabled={control().isDisabled}
-        required={control().isRequired}
-      />
-
-      <Show when={control().isTouched && control().errors?.isMissing}>
-        <small>Answer required.</small>
-      </Show>
-    </>
-  );
-};
-```
-
-Here we've created a reusable `TextInput` component. We just pass it a FormControl via the `control` prop and use it like normal. Nice and easy!
-
-You also aren't limited to reusing FormControls. Here's an example of a reusable AddressField component.
-
-```tsx
-import { Show, type Component } from "solid-js";
-import {
-  createFormGroup,
-  createFormControl,
-  type IFormGroup,
-  type IFormControl,
-} from "solid-forms";
-
-const AddressField: Component<{
-  control: IFormGroup<{
-    street: IFormControl<string>;
-    city: IFormControl<string>;
-    state: IFormControl<string>;
-    zip: IFormControl<string>;
-  }>;
-  legend?: string;
-}> = () => {
-  const group = () => props.control;
-  const controls = () => group().controls;
-
-  return (
-    <fieldset disabled={group().isDisabled}>
-      <legend>{props.legend || "Your address"}</legend>
-
-      <label for="street">Street</label>
-      <TextInput name="street" control={controls().street} />
-
-      <label for="city">City</label>
-      <TextInput name="city" control={controls().city} />
-
-      <label for="state">State</label>
-      <TextInput name="state" control={controls().state} />
-
-      <label for="zip">Zip</label>
-      <TextInput name="zip" control={controls().zip} />
-    </fieldset>
-  );
-};
-```
-
-But here, with our reusable AddressField component, the parent using this component always needs to build the address form group. Maybe you want to cut down on that duplication so you try to wire things up so that, instead of passing an address FormGroup control prop to the AddressField, you pass the parent FormGroup and the AddressField registers itself.
-
-For example:
-
-```tsx
-const options = {
-  required: true,
-  validators: MyValidators.required,
-};
-
-const AddressField: Component<{
-  controlContainer: IFormGroup;
-  controlName: string;
-  legend?: string;
-}> = () => {
-  const group = createFormGroup({
-    street: createFormControl("", options),
-    city: createFormControl("", options),
-    state: createFormControl("", options),
-    zip: createFormControl("", options),
-  });
-
-  createEffect(() => {
-    props.controlContainer.setControl(props.controlName, group);
-
-    onCleanup(() => {
-      props.controlContainer.removeControl(group);
-    });
-  });
-
-  // ...
-};
-```
-
-In this example, the parent doesn't need to worry about creating our AddressField control, the address field handles that itself. The problem with this approach is that the address control is not available in the parent immediately. Instead, we need to wait for Solidjs to run through the `createEffect()` so that the control is registered on the parent via `setControl()`. Additionally, in typescript we don't have nice type inference on the parent control. Also, maybe the parent component wants to do some customization on initialization to the AddressField control. That gets more complicated if the address control is being intialized in the AddressField component.
-
-Maybe instead you decide to do something like the following:
-
-```tsx
-const options = {
-  required: true,
-  validators: MyValidators.required,
-};
-
-export const controlFactory = () =>
-  createFormGroup({
-    street: createFormControl("", options),
-    city: createFormControl("", options),
-    state: createFormControl("", options),
-    zip: createFormControl("", options),
-  });
-
-export const AddressField: Component<{
-  control: IFormGroup<{
-    street: IFormControl<string>;
-    city: IFormControl<string>;
-    state: IFormControl<string>;
-    zip: IFormControl<string>;
-  }>;
-  legend?: string;
-}> = () => {
-  // ...
-};
-```
-
-And then, in a hypothetical parent component...
-
-```tsx
-import { AddressField, controlFactory } from "./AddressField";
-
-export const ParentForm: Component<{}> = () => {
-  const group = createFormGroup({
-    firstName: createFormControl(""),
-    lastName: createFormControl(""),
-    address: controlFactory(),
-  });
-
-  const controls = () => group.controls;
-
-  // For whatever reason, we decide to for our address field to
-  // be disabled by default.
-  controls().address.markDisabled(true);
-
-  return (
-    <form>
-      <label for="firstName">First name</label>
-      <TextInput name="firstName" control={controls().firstName} />
-
-      <label for="lastName">Last Name</label>
-      <TextInput name="lastName" control={controls().lastName} />
-
-      <AddressField control={controls().address} />
-    </form>
-  );
-};
-```
-
-In this example, we create a control factory function which a parent can import and use to create the AddressField form group. This is nice because we get our type inference in typescript and also we can manipulate the address control before passing it to the AddressField. In this example we decide to disable the AddressField control before passing it to the AddressField.
-
-But there's a better way of doing this...
-
-#### The `withControl()` helper
-
-The simplest way of creating a reusable form component is to just handle it like a normal component [like described above](#reusing-form-components). However, in many situations, for example the AddressField, it might make sense to colocate the address control creation logic with AddressField. In these situations (which might be most situations), Solid Forms provides an optional `withControl()` higher order component helper that simplifies creating reusable form components.
+To make it easier to build nice, reusable form components, Solid Forms provides an optional `withControl()` higher order component.
 
 For example:
 
@@ -839,7 +848,7 @@ const AddressField = withControl<{ legend?: string }, typeof controlFactory>({
 };
 ```
 
-The `withControl()` function expects an object with `controlFactory` and `component` properties. The component property expects a component function. This component function will always receive a `control` prop that has the same interface as the control returned by the provided `controlFactory` function. The control factory function is responsible for constructing the control used by the component. The control factory function optionally receives the component's properties as arguments. When using the `AddressField`, it will have an optional `control` property. If you provide that property (like we did in the example above), then the `controlFactory` function will never be called. But `withControl()` allows us to use our AddressField by itself without providing a control property to it.
+The `withControl()` function expects an object with `controlFactory` and `component` properties. The component property expects a component function. This component function will always receive a `control` prop that has the same typescript-type as the control returned by the provided `controlFactory` function. The control factory function is responsible for constructing the control used by the component. The control factory function optionally receives the component's properties as arguments. When using the `AddressField`, it will have an optional `control` property. If you provide that property (like we did in the example above), then the `controlFactory` function will never be called. But `withControl()` allows us to use our AddressField by itself without providing a control property to it.
 
 For example:
 
@@ -859,7 +868,7 @@ export const App: Component<{}> = () => {
 
 This example will work just fine. In this case, `withControl()` will see that a `control` property wasn't provided and will use the controlFactory function you gave to construct it's control. Since we provided the optional `required` prop, that prop will be provided to the controlFactory function in the props param.
 
-The controlFactory function, itself, operates like a component. It is only called once on initialization, and you can use choose to use `createEffect()` and signals inside of it.
+The controlFactory function, itself, operates like a component. It is only called once on initialization, and you can choose to use `createEffect()` and signals inside of it.
 
 For example:
 
@@ -891,116 +900,27 @@ const AddressField = withControl<{ legend?: string }, typeof controlFactory>({
 };
 ```
 
-### Validation and errors
-
-Validating data and working with errors is a core part of working with forms. The are two primary ways of validating data in Solid Forms. The simple but more limited approach is to use validator functions and the more flexible and powerful approach is to just use Solidjs builtings like `createEffect()` to observe control changes and then `setErrors()` and `patchErrors()` as appropriate.
-
-#### Validator functions
-
-Validator functions are optional functions you can provide to a control which are run whenever the control's value changes and either return `null` (if there are no errors) or return an object with key-value entries if there are errors.
-
-```ts
-const control = createFormControl("", {
-  validators: (value: string) =>
-    value.length === 0 ? { isMissing: true } : null,
-});
-```
-
-In this example we provide a validator function that returns an error if the control's value is length `0`. When constructing a new control, we can also provide an array of validator functions if we wish. All their errors on every change will be merged together in the control. You can update the validator function with `setValidator()`.
-
-#### Observe changes and manually set errors
-
-Validator functions are nice and the easiest way to add validation in many (most?) situations, but a more powerful approach is to observe control changes and manually set errors. With this approach, we have access to the full array of control properties which we can include in our validation logic (not just the value).
-
-For example:
-
-```ts
-const control = createFormControl("");
-
-createRenderEffect(() => {
-  if (control.value.includes("@")) {
-    control.setErrors({ mustNotIncludeSymbol: "Cannot include '@' symbol." });
-  } else {
-    control.setErrors(null);
-  }
-});
-```
-
-Here we observe control value changes and set an error if the value includes an "@" symbol or else clear the errors (to indicate that the value is valid).
-
-If we have multiple different validation effects, we should use the `source` property of `setErrors()` and `patchErrors()` to partition the errors associated with each effect. For example:
-
-```ts
-const control = createFormControl("");
-
-createRenderEffect(() => {
-  if (control.value.includes("@")) {
-    control.setErrors(
-      { mustNotIncludeSymbol: "Cannot include '@' symbol." },
-      {
-        source: "@ validator",
-      }
-    );
-  } else {
-    control.setErrors(null, {
-      source: "@ validator",
-    });
-  }
-});
-
-createRenderEffect(() => {
-  if (control.value.length > 10) {
-    control.setErrors(
-      { tooLong: "Cannot be more than 10 characters." },
-      {
-        source: "Max lenth validator",
-      }
-    );
-  } else {
-    control.setErrors(null, {
-      source: "Max lenth validator",
-    });
-  }
-});
-```
-
-Here when we `setErrors()` and also provide the `source` option, we will only clear or overwrite existing errors that were also set with the `"Max lenth validator"` source. The `setValidators()` (for setting validator functions) and `markPending()` methods also accept `source` options. The `markPending()` option allows async validators to mark the control as pending while the validation is being processed. The control will register as pending so long as any `source` is still pending.
-
-### Examples
-
-I generally like seeing some example code to get a feel for the API. What follows are three examples of using Solid Forms. These examples don't go into great detail describing how things work though. If you'd like to dive in to how to use Solid Forms, skip to the [Building a form](#building-a-form) section, below.
-
-#### Simple example
+Finally, `withControl()` will add a `control` property containing your `controlFactory` function to the created Solidjs component. You can see this in action in the `ParentComponent` example, above
 
 ```tsx
-import { Show, type Component } from "solid-js";
-import { createFormControl } from "solid-forms";
+import { AddressField } from "./AddressField";
 
-const ExampleComponent: Component<{}> = () => {
-  const control = createFormControl("");
-
-  createEffect(() => {
-    console.log("see value on every change", control.value);
+export const ParentForm: Component<{}> = () => {
+  const group = createFormGroup({
+    firstName: createFormControl(""),
+    lastName: createFormControl(""),
+    // This use of `AddressField.control` is invoking the AddressField's
+    // controlFactory function
+    address: AddressField.control({ required: true }),
   });
 
-  return (
-    <div>
-      <label for="example">Please provide some text</label>
-
-      <input
-        name="example"
-        type="text"
-        value={control.value}
-        oninput={(e) => {
-          control.setValue(e.currentTarget.value);
-        }}
-      />
-    </div>
-  );
+  // ...
 };
 ```
 
-#### Simple example with validation
+## Examples
+
+### Simple example with validation
 
 ```tsx
 const ExampleComponent: Component<{}> = () => {
@@ -1034,7 +954,7 @@ const ExampleComponent: Component<{}> = () => {
 };
 ```
 
-Alternatively
+Alternatively, this is effectively the same as the above:
 
 ```tsx
 const ExampleComponent: Component<{}> = () => {
@@ -1052,11 +972,29 @@ const ExampleComponent: Component<{}> = () => {
     }
   });
 
-  // ...
+  return (
+    <div>
+      <label for="example">Please provide some text</label>
+
+      <input
+        name="example"
+        type="text"
+        value={control.value}
+        oninput={(e) => {
+          control.setValue(e.currentTarget.value);
+        }}
+        onblur={() => control.markTouched(true)}
+      />
+
+      <Show when={control.isTouched && control.errors?.isMissing}>
+        <small>Answer required.</small>
+      </Show>
+    </div>
+  );
 };
 ```
 
-#### Medium example
+### Medium example
 
 ```tsx
 import { Show, type Component } from "solid-js";
@@ -1137,24 +1075,31 @@ const ExampleForm: Component<{}> = () => {
   });
 
   createRenderEffect(() => {
-    const name = () => group.controls.name;
-    const email = () => group.controls.email;
-
     if (!group.children.areValid) {
       group.setErrors(null);
       return;
     }
 
-    const firstPartOfEmail = email().value.split("@")[0];
+    const firstPartOfEmail = group.value.email.split("@")[0];
 
-    if (firstPartOfEmail !== name()) {
+    if (firstPartOfEmail !== group.value.name) {
       group.setErrors({ invalid: "email must match name" });
     } else {
       group.setErrors(null);
     }
   });
 
-  // etc ...
+  return (
+    <form onSubmit={onSubmit}>
+      <label for="name">Your name</label>
+      <TextInput name="name" control={group.controls.name} />
+
+      <label for="email">Your email address</label>
+      <TextInput name="email" type="email" control={group.controls.email} />
+
+      <button>Submit</button>
+    </form>
+  );
 };
 ```
 
@@ -1188,13 +1133,26 @@ interface IAbstractControl<
   readonly data: Data;
 
   /**
-   * The value of the IAbstractControl. In an IAbstractControlContainer,
-   * `value` and `rawValue` have differences, but in a standard
-   * `IAbstractControl` `value` is an alias for `rawValue`.
+   * The value of the IAbstractControl.
+   *
+   * In an IAbstractControlContainer,
+   * `value` and `rawValue` can be different, but in a standard
+   * `IAbstractControl` `value` is just an alias for `rawValue`.
+   * See the IAbstractControlContainer interface for possible differences
+   * between `value` and `rawValue`.
    */
   readonly value: Value;
 
-  /** The value of the IAbstractControl. */
+  /**
+   * The value of the IAbstractControl.
+   *
+   * In an IAbstractControlContainer,
+   * `value` and `rawValue` can be different, but in a standard
+   * `IAbstractControl` `value` is just an alias for `rawValue` and
+   * rawValue just contains the control's value.
+   * See the IAbstractControlContainer interface for possible differences
+   * between `value` and `rawValue`.
+   */
   readonly rawValue: RawValue;
 
   /**
@@ -1232,7 +1190,7 @@ interface IAbstractControl<
    * have any predefined meaning for IAbstractControls and it doesn't affect
    * validation in any way. It is up to you to decide what meaning, if any,
    * to give to this property and how to use it. For example, if you
-   * validated the control inside a `createEffect()` you could alter the
+   * validated the control inside a `createEffect()`, you could choose to alter the
    * validation based on whether the control was marked as `required` or
    * not.
    */
@@ -1247,34 +1205,10 @@ interface IAbstractControl<
   readonly errors: ValidationErrors | null;
 
   /**
-   * *More advanced-ish*
-   *
-   * Contains a map of ControlId values and ValidationErrors.
-   * The errorsStore allows partitioning errors so that
-   * they can be associated with different sources and so
-   * that one source does not overwrite another source.
-   *
-   * The `self.errors` property gets its errors from the errorsStore.
-   */
-  readonly errorsStore: ReadonlyMap<ControlId, ValidationErrors>;
-
-  /**
    * A validator function that is run on value changes and which
    * generates errors associated with the source "CONTROL_DEFAULT_SOURCE".
    */
   readonly validator: ValidatorFn | null;
-
-  /**
-   * A map of ControlIds and ValidatorFns. The `validator`
-   * property is composed of all the validator functions in the
-   * `validatorStore`. The validatorStore allows you to change
-   * individual validator functions on the control without
-   * affecting other validator functions on the control.
-   *
-   * When you use the `setValidators` method, you are updating
-   * the validatorStore.
-   */
-  readonly validatorStore: ReadonlyMap<ControlId, ValidatorFn>;
 
   /**
    * `true` if this control is pending, false otherwise.
@@ -1283,31 +1217,23 @@ interface IAbstractControl<
   readonly isPending: boolean;
 
   /**
-   * A set of ControlIds. `self.isPending` is true so long
-   * as `pendingStore.size > 0`. Because this is a set, you
-   * can track multiple pending "things" at once. This
-   * control will register as pending until all of the "things"
-   * have resolved. Use the `markPending()` method with
-   * the `source` option to update the pendingStore.
-   */
-  readonly pendingStore: ReadonlySet<ControlId>;
-
-  /**
-   * Valid if `this.selfErrors === null && !this.selfPending`
+   * Valid if `errors === null && !isPending`
    *
-   * This is an alias for `selfValid`.
+   * This is an alias for `self.valid`.
    */
   readonly isValid: boolean;
 
   /**
    * The `self` object on an abstract control contains
-   * properties reflecting the controls personal state. On an
+   * properties reflecting the control's personal state. On an
    * IAbstractControlContainer, the personal state can differ
    * from the control's state. For example, an
    * IAbstractControlContainer will register as disabled if
    * the control itself has been marked as disabled OR if
-   * all of it's children controls are disabled. Marking the
-   * control itself as disabled doesn't mark the children as
+   * all of it's child controls are disabled.
+   *
+   * Marking the control container
+   * itself as disabled doesn't mark the container's children as
    * disabled. On a standard IAbstractControl though,
    * the "self" properties are the same as regular properties.
    * I.e. `self.isInvalid` is the same as `isInvalid` on a
@@ -1326,6 +1252,7 @@ interface IAbstractControl<
 
     /**
      * `true` if this control is dirty, false otherwise.
+     *
      * Dirty can be thought of as, "Has the value changed?"
      * Though the isDirty property must be manually set by
      * the user (using `markDirty()`) and is not automatically
@@ -1334,9 +1261,12 @@ interface IAbstractControl<
     readonly isDirty: boolean;
     /**
      * `true` if this control is readonly, false otherwise.
+     *
      * This property does not have any predefined meeting for
      * an IAbstractControl. You can decide if you want to give
-     * it meaning.
+     * it meaning by, for example, using this value to set
+     * an input's readonly status (e.g.
+     * `<input readonly={control.isReadonly} />`)
      */
     readonly isReadonly: boolean;
 
@@ -1364,6 +1294,44 @@ interface IAbstractControl<
      * has any errors. Otherwise contains `null`.
      */
     readonly errors: ValidationErrors | null;
+
+    /**
+     * *More advanced-ish*
+     *
+     * Contains a map of ControlId values and ValidationErrors.
+     * The errorsStore allows partitioning errors so that
+     * they can be associated with different sources and so
+     * that one source does not overwrite another source.
+     *
+     * The `self.errors` property gets its errors from the errorsStore.
+     */
+    readonly errorsStore: ReadonlyMap<ControlId, ValidationErrors>;
+
+    /**
+     * More advanced-ish*
+     *
+     * A set of ControlIds. `self.isPending` is true so long
+     * as `pendingStore.size > 0`. Because this is a set, you
+     * can track multiple pending "things" at once. This
+     * control will register as pending until all of the "things"
+     * have resolved. Use the `markPending()` method with
+     * the `source` option to update the pendingStore.
+     */
+    readonly pendingStore: ReadonlySet<ControlId>;
+
+    /**
+     * More advanced-ish*
+     *
+     * A map of ControlIds and ValidatorFns. The `validator`
+     * property is composed of all the validator functions in the
+     * `validatorStore`. The validatorStore allows you to change
+     * individual validator functions on the control without
+     * affecting other validator functions on the control.
+     *
+     * When you use the `setValidators` method, you are updating
+     * the validatorStore.
+     */
+    readonly validatorStore: ReadonlyMap<ControlId, ValidatorFn>;
   };
 
   /**
@@ -1380,13 +1348,13 @@ interface IAbstractControl<
   setValue(value: RawValue): void;
 
   /**
-   * If provided a `ValidationErrors` object or `null`, replaces the errors.
+   * If provided a `ValidationErrors` object or `null`, replaces `self.errors`.
    * Optionally, provide a source ID and the change will be partitioned
-   * assocaited with the source ID. The default source is
+   * assocaited with the source ID. The default source ID is
    * "CONTROL_DEFAULT_SOURCE".
    *
    * If you provide a `Map` object containing `ValidationErrors` keyed to source IDs,
-   * that will replace the `errorsStore` associated with this control.
+   * that will replace the `self.errorsStore` associated with this control.
    */
   setErrors(
     value: ValidationErrors | null | ReadonlyMap<ControlId, ValidationErrors>,
@@ -1396,8 +1364,8 @@ interface IAbstractControl<
   /**
    * If you provide a `ValidationErrors` object, that object is merged with the
    * existing errors associated with the source ID. If the error object has
-   * properties = `null`, errors associated with those keys are deleted
-   * from the `errorsStore`.
+   * keys equal to `null`, errors associated with those keys are deleted
+   * from the errors object.
    *
    * If you provide a `Map` object containing `ValidationErrors` keyed to source IDs,
    * that object is merged with the existing `errorsStore`.
@@ -1407,12 +1375,19 @@ interface IAbstractControl<
     options?: { source?: ControlId }
   ): void;
 
+  /** sets `self.isTouched` */
   markTouched(value: boolean): void;
+
+  /** sets `self.isDirty` */
   markDirty(value: boolean): void;
+
+  /** sets `self.isReadonly` */
   markReadonly(value: boolean): void;
 
   /**
-   * Mark the control as required. Note that this property doesn't
+   * Sets `self.isRequired`.
+   *
+   * Note that this property doesn't
    * have any predefined meaning for IAbstractControls and it doesn't affect
    * validation in any way. It is up to you to decide what meaning, if any,
    * to give to this property and how to use it. For example, if you
@@ -1423,19 +1398,27 @@ interface IAbstractControl<
   markRequired(value: boolean): void;
 
   /**
-   * Mark the control as disabled. This affect's the control's `status`
+   * Set `self.isDisabled`.
+   *
+   * Note that `self.isDisabled`` affect's the control's `status`
    * property. Additionally, `IAbstractControlContainer's` ignore
    * disabled children in many cases. For example, the `value` of a
-   * control container does not contain disabled children (if you want
-   * to see the value including disabled children, use `rawValue`).
+   * control container is equal to the value of it's _enabled_ children
+   * (if you want to see the value including disabled children, use
+   * `rawValue`).
    */
   markDisabled(value: boolean): void;
+
+  /** sets `self.isSubmitted` */
   markSubmitted(value: boolean): void;
+
+  /** sets `self.pendingStore` and `self.isPending` */
   markPending(
     value: boolean | ReadonlySet<ControlId>,
     options?: { source?: ControlId }
   ): void;
 
+  /** sets `validator` and `self.validatorStore` */
   setValidators(
     value:
       | ValidatorFn
@@ -1470,8 +1453,10 @@ export interface IAbstractControlContainer<
     Data,
     ControlsValue<Controls>
   > {
+  /** Child controls associated with this container */
   readonly controls: Controls;
 
+  /** The number of controls associated with this container */
   readonly size: number;
 
   /** Only returns values for enabled child controls. */
@@ -1603,93 +1588,23 @@ export interface IAbstractControlContainer<
 
   [AbstractControlContainerInterface]: true;
 
-  get<A extends ControlsKey<Controls>>(a: A): Controls[A];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>
-  >(
-    a: A,
-    b: B
-  ): ContainerControls<Controls[A]>[B];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>,
-    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>
-  >(
-    a: A,
-    b: B,
-    c: C
-  ): ContainerControls<ContainerControls<Controls[A]>[B]>[C];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>,
-    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
-    D extends keyof ContainerControls<
-      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-    >
-  >(
-    a: A,
-    b: B,
-    c: C,
-    d: D
-  ): ContainerControls<
-    ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-  >[D];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>,
-    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
-    D extends keyof ContainerControls<
-      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-    >,
-    E extends keyof ContainerControls<
-      ContainerControls<
-        ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-      >[D]
-    >
-  >(
-    a: A,
-    b: B,
-    c: C,
-    d: D,
-    e: E
-  ): ContainerControls<
-    ContainerControls<
-      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-    >[D]
-  >[E];
-  get<
-    A extends ControlsKey<Controls>,
-    B extends keyof ContainerControls<Controls[A]>,
-    C extends keyof ContainerControls<ContainerControls<Controls[A]>[B]>,
-    D extends keyof ContainerControls<
-      ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-    >,
-    E extends keyof ContainerControls<
-      ContainerControls<
-        ContainerControls<ContainerControls<Controls[A]>[B]>[C]
-      >[D]
-    >,
-    F extends IAbstractControl = IAbstractControl
-  >(
-    a: A,
-    b: B,
-    c: C,
-    d: D,
-    e: E,
-    ...args: any[]
-  ): F | null;
-
   /**
    * Apply a partial update to the values of some children but
    * not all.
    */
   patchValue(value: unknown): void;
 
+  /** sets the `controls` property */
   setControls(controls: Controls): void;
 
+  /** stores the provided control in `controls[key]` */
   setControl(key: unknown, control: unknown): void;
 
+  /**
+   * If provided a control value, removes the given control from
+   * `controls`. If provided a control key value, removes the
+   * control associated with the given key from `controls`.
+   */
   removeControl(key: unknown): void;
 }
 ```
@@ -1704,6 +1619,40 @@ interface IFormControl<
   Data extends Record<ControlId, any> = Record<ControlId, any>
 > extends IAbstractControl<Value, Data, Value> {
   [FormControlInterface]: true;
+}
+```
+
+#### `createFormControl()`
+
+Use the `createFormControl()` function to create a new Solidjs store conforming to the `IFormControl` interface.
+
+```ts
+function createFormControl<
+  Value,
+  Data extends Record<ControlId, any> = Record<ControlId, any>
+>(
+  value?: Value,
+  options?: IFormControlOptions<Data>
+): IFormControl<Value, Data>;
+
+interface IFormControlOptions<
+  Data extends Record<ControlId, any> = Record<ControlId, any>
+> {
+  id?: ControlId;
+  data?: Data;
+  disabled?: boolean;
+  touched?: boolean;
+  dirty?: boolean;
+  readonly?: boolean;
+  required?: boolean;
+  submitted?: boolean;
+  errors?: null | ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>;
+  validators?:
+    | null
+    | ValidatorFn
+    | ValidatorFn[]
+    | ReadonlyMap<ControlId, ValidatorFn>;
+  pending?: boolean | ReadonlySet<ControlId>;
 }
 ```
 
@@ -1722,6 +1671,42 @@ interface IFormGroup<
 }
 ```
 
+#### `createFormGroup()`
+
+Use the `createFormGroup()` function to create a new Solidjs store conforming to the `IFormGroup` interface.
+
+```ts
+function createFormGroup<
+  Controls extends { [key: string]: IAbstractControl } = {
+    [key: string]: IAbstractControl;
+  },
+  Data extends Record<ControlId, any> = Record<ControlId, any>
+>(
+  controls?: Controls,
+  options?: IFormGroupOptions<Data>
+): IFormGroup<Controls, Data>;
+
+interface IFormGroupOptions<
+  Data extends Record<ControlId, any> = Record<ControlId, any>
+> {
+  id?: ControlId;
+  data?: Data;
+  disabled?: boolean;
+  touched?: boolean;
+  dirty?: boolean;
+  readonly?: boolean;
+  required?: boolean;
+  submitted?: boolean;
+  errors?: null | ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>;
+  validators?:
+    | null
+    | ValidatorFn
+    | ValidatorFn[]
+    | ReadonlyMap<ControlId, ValidatorFn>;
+  pending?: boolean | ReadonlySet<ControlId>;
+}
+```
+
 ### IFormArray
 
 [See the `IAbstractControlContainer` interface, above.](#iabstractcontrolcontainer) IFormArray has the same properties as that interface with one addtion: `push()` for adding new child controls to the end of the form array.
@@ -1734,6 +1719,106 @@ interface IFormArray<
   [FormArrayInterface]: true;
   push(control: Controls[number]): void;
 }
+```
+
+#### `createFormArray()`
+
+Use the `createFormArray()` function to create a new Solidjs store conforming to the `IFormArray` interface.
+
+```ts
+function createFormArray<
+  Controls extends ReadonlyArray<IAbstractControl> = ReadonlyArray<IAbstractControl>,
+  Data extends Record<ControlId, any> = Record<ControlId, any>
+>(
+  controls?: Controls,
+  options?: IFormArrayOptions<Data>
+): IFormArray<Controls, Data>;
+
+interface IFormArrayOptions<
+  Data extends Record<ControlId, any> = Record<ControlId, any>
+> {
+  id?: ControlId;
+  data?: Data;
+  disabled?: boolean;
+  touched?: boolean;
+  dirty?: boolean;
+  readonly?: boolean;
+  required?: boolean;
+  submitted?: boolean;
+  errors?: null | ValidationErrors | ReadonlyMap<ControlId, ValidationErrors>;
+  validators?:
+    | null
+    | ValidatorFn
+    | ValidatorFn[]
+    | ReadonlyMap<ControlId, ValidatorFn>;
+  pending?: boolean | ReadonlySet<ControlId>;
+}
+```
+
+### Helpers
+
+#### `withControl()`
+
+A higher order component function for creating reusable form components.
+
+````ts
+function withControl<
+  Props extends {},
+  ControlFactory extends (...args: [any, ...any[]]) => IAbstractControl
+>(
+  options: IWithControlOptions<Props, ControlFactory>
+): WithControlReturnType<Props, ControlFactory>;
+
+interface IWithControlOptions<
+  Props extends {},
+  ControlFactory extends (...args: [any, ...any[]]) => IAbstractControl
+> {
+  controlFactory: ControlFactory;
+  component: Component<
+    WithControlProps<Props, ControlFactory> & {
+      control: ReturnType<ControlFactory>;
+    }
+  >;
+}
+
+type WithControlReturnType<
+  Props extends {},
+  ControlFactory extends (...args: [any, ...any[]]) => IAbstractControl
+> = ((
+  props: WithControlProps<Props, ControlFactory> & {
+    control?: ReturnType<ControlFactory>;
+  }
+) => JSX.Element) & {
+  /**
+   * Factory function to build the component's default form control.
+   * Note, you can pass any form control to the component which
+   * satisfies the component's interface. You do not need to use
+   * this factory function.
+   *
+   * Example usage:
+   * ```ts
+   * const TextInput = withControl({
+   *   // etc...
+   * });
+   *
+   * createFormGroup({
+   *   street: TextInput.control(),
+   *   city: TextInput.control(),
+   *   state: TextInput.control(),
+   *   zip: TextInput.control(),
+   * })
+   * ```
+   */
+  control: ControlFactory;
+};
+````
+
+#### `bindOwner()`
+
+Helper to bind the owner of the current context to the supplied function.
+
+```ts
+function bindOwner<T>(fn: () => T): () => T;
 ```
 
 ## About
