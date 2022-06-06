@@ -4,7 +4,7 @@
 
 export type ControlId = string | symbol;
 
-export type ValidatorFn<T = any> = (value: T) => ValidationErrors | null;
+export type ValidatorFn<T = any> = (rawValue: T) => ValidationErrors | null;
 
 export interface ValidationErrors {
   [key: string]: any;
@@ -123,7 +123,7 @@ export interface IAbstractControl<
   readonly errors: ValidationErrors | null;
 
   /**
-   * A validator function that is run on value changes and which
+   * A validator function that is run on rawValue changes and which
    * generates errors associated with the source "CONTROL_DEFAULT_SOURCE".
    */
   readonly validator: ValidatorFn | null;

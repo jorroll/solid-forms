@@ -343,16 +343,16 @@ Validating form data and working with errors is a core part of handling user inp
 
 #### Validator functions
 
-Validator functions are optional functions you can provide to a control which are run whenever the control's value changes and either return `null` (if there are no errors) or return an object with key-value entries if there are errors.
+Validator functions are optional functions you can provide to a control which are run whenever the control's value changes (technically `rawValue`) and either return `null` (if there are no errors) or return an object with key-value entries if there are errors.
 
 ```ts
 import { type ValidatorFn } from "solid-forms";
 
-const requiredValidator: ValidatorFn = (value: string) =>
-  value.length === 0 ? { isMissing: true } : null;
+const requiredValidator: ValidatorFn = (rawValue: string) =>
+  rawValue.length === 0 ? { isMissing: true } : null;
 
-const lowercaseValidator: ValidatorFn = (value: string) =>
-  value.toLowerCase() !== value ? { isNotLowercase: true } : null;
+const lowercaseValidator: ValidatorFn = (rawValue: string) =>
+  rawValue.toLowerCase() !== rawValue ? { isNotLowercase: true } : null;
 
 // You can also create controls with validator functions
 const control = createFormControl("", {
@@ -1220,7 +1220,7 @@ interface IAbstractControl<
   readonly errors: ValidationErrors | null;
 
   /**
-   * A validator function that is run on value changes and which
+   * A validator function that is run on rawValue changes and which
    * generates errors associated with the source "CONTROL_DEFAULT_SOURCE".
    */
   readonly validator: ValidatorFn | null;

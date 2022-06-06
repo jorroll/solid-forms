@@ -388,7 +388,7 @@ export function createAbstractControlBase<
     // after the control is initialized)
     createComputed(
       on(
-        () => control.validator?.(control.value) ?? null,
+        () => control.validator?.(control.rawValue) ?? null,
         (errors) => {
           if (control.self.errorsStore.get(DEFAULT_SOURCE) === errors) return;
 
