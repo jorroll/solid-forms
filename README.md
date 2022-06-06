@@ -37,6 +37,11 @@ npm install solid-forms
   - [Helpers](#helpers)
     - [`withControl()`](#withcontrol)
     - [`bindOwner()`](#bindowner)
+    - [`isAbstractControl()`](#isabstractcontrol)
+    - [`isAbstractControlContainer()`](#isabstractcontrolcontainer)
+    - [`isFormControl()`](#isformcontrol)
+    - [`isFormGroup()`](#isformgroup)
+    - [`isFormArray()`](#isformarray)
 
 ## Getting Started
 
@@ -1764,6 +1769,8 @@ interface IFormArrayOptions<
 A higher order component function for creating reusable form components.
 
 ````ts
+import { withControl } from "solid-forms";
+
 function withControl<
   Props extends {},
   ControlFactory extends (...args: [any, ...any[]]) => IAbstractControl
@@ -1820,7 +1827,61 @@ type WithControlReturnType<
 Helper to bind the owner of the current context to the supplied function.
 
 ```ts
+import { bindOwner } from "solid-forms";
+
 function bindOwner<T>(fn: () => T): () => T;
+```
+
+#### `isAbstractControl()`
+
+Check's if an object is an `IAbstractControl`.
+
+```ts
+import { isAbstractControl } from "solid-forms";
+
+function isAbstractControl(object?: unknown): object is IAbstractControl;
+```
+
+#### `isAbstractControlContainer()`
+
+Check's if an object is an `IAbstractControlContainer`.
+
+```ts
+import { isAbstractControlContainer } from "solid-forms";
+
+function isAbstractControlContainer(
+  object?: unknown
+): object is IAbstractControlContainer;
+```
+
+#### `isFormControl()`
+
+Check's if an object is an `IFormControl`.
+
+```ts
+import { isFormControl } from "solid-forms";
+
+function isFormControl(object?: unknown): object is IFormControl;
+```
+
+#### `isFormGroup()`
+
+Check's if an object is an `IFormGroup`.
+
+```ts
+import { isFormGroup } from "solid-forms";
+
+function isFormGroup(object?: unknown): object is IFormGroup;
+```
+
+#### `isFormArray()`
+
+Check's if an object is an `IFormArray`.
+
+```ts
+import { isFormArray } from "solid-forms";
+
+function isFormArray(object?: unknown): object is IFormArray;
 ```
 
 ## About
