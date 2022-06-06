@@ -19,6 +19,7 @@ import {
 import { createStore, produce, SetStoreFunction, Store } from 'solid-js/store';
 import { Accessor, batch, createMemo } from 'solid-js';
 import { isEqual, mergeObj } from './util';
+import type { PartialDeep } from 'type-fest';
 
 export const FormArrayInterface = '@@FormArrayInterface_solidjs';
 
@@ -32,6 +33,11 @@ export interface IFormArray<
 > extends IAbstractControlContainer<Controls, Data> {
   [FormArrayInterface]: true;
   push(control: Controls[number]): void;
+  setControls(controls: Controls): void;
+  removeControl(
+    keyOrControl: ControlsKey<Controls> | Controls[ControlsKey<Controls>]
+  ): void;
+  patchValue(value: PartialDeep<ControlsRawValue<Controls>>): void;
 }
 
 /**

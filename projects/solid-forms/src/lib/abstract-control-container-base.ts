@@ -1,6 +1,7 @@
-import type {
+import {
   AbstractControlInterface,
   ControlId,
+  isAbstractControl,
   ValidationErrors,
 } from './abstract-control';
 
@@ -25,7 +26,7 @@ import {
 import { SetStoreFunction, Store } from 'solid-js/store';
 import { Accessor, batch, createMemo } from 'solid-js';
 import { isEqual, mergeObj } from './util';
-import { PartialDeep } from 'type-fest';
+import type { PartialDeep } from 'type-fest';
 
 export interface IAbstractControlContainerBaseArgs<
   Data extends Record<ControlId, any> = Record<ControlId, any>
@@ -308,11 +309,21 @@ export function createAbstractControlContainerBase<
 
     /**
      * The provided control is removed from this FormGroup
-     * if it is a child of this FormGroup.
+     * if it is a child of this FormGroup. Or the control
+     * associated with the provided key is removed.
      */
-    removeControl(newControl: Controls[ControlsKey<Controls>]) {
+    removeControl(
+      keyOrControl: ControlsKey<Controls> | Controls[ControlsKey<Controls>]
+    ) {
+      if (!isAbstractControl(keyOrControl)) {
+        control.setControl(keyOrControl as ControlsKey<Controls>, null);
+        return;
+      }
+
+      const childControl = keyOrControl;
+
       for (const [key, c] of Object.entries(control.controls!)) {
-        if (c !== (newControl as unknown as IAbstractControl)) continue;
+        if (c !== childControl) continue;
 
         control.setControl(key as ControlsKey<Controls>, null);
         return;

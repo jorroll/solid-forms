@@ -278,5 +278,5 @@ export interface IAbstractControlContainer<
    * `controls`. If provided a control key value, removes the
    * control associated with the given key from `controls`.
    */
-  removeControl(key: unknown): void;
+  removeControl(keyOrControl: unknown): void;
 }

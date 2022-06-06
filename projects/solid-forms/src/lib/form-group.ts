@@ -17,8 +17,9 @@ import {
   propInitializer,
 } from './abstract-control-base';
 import { createStore, produce, SetStoreFunction, Store } from 'solid-js/store';
-import { Accessor, batch, createMemo } from 'solid-js';
+import { Accessor, createMemo } from 'solid-js';
 import { isEqual, mergeObj } from './util';
+import type { PartialDeep } from 'type-fest';
 
 export const FormGroupInterface = '@@FormGroupInterface_solidjs';
 
@@ -33,6 +34,11 @@ export interface IFormGroup<
   Data extends Record<ControlId, any> = Record<ControlId, any>
 > extends IAbstractControlContainer<Controls, Data> {
   [FormGroupInterface]: true;
+  setControls(controls: Controls): void;
+  removeControl(
+    keyOrControl: ControlsKey<Controls> | Controls[ControlsKey<Controls>]
+  ): void;
+  patchValue(value: PartialDeep<ControlsRawValue<Controls>>): void;
 }
 
 /**
