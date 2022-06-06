@@ -47,7 +47,7 @@ npm install solid-forms
 
 The basic building block of Solid Forms are FormControls (see `IFormControl` API). A FormControl is intended to model a single input element of a form. For example, an `<input />` element or a radio button group. You can use a FormControl to save the value of the input, to handle validation and track errors, to track whether the input has been touched, changed, submitted, etc. Importantly, the FormControl itself is just a [Solidjs `store` object](https://www.solidjs.com/docs/latest/api#using-stores) so all of it's properties are observable and you can easily respond to changes (e.g. with `createEffect()` or just using the control values inside of a component directly).
 
-For example ([Stackblitz demo](#https://stackblitz.com/edit/vitejs-vite-dyy5v3?file=src/Example.tsx)),
+For example ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-dyy5v3?file=src/Example.tsx)),
 
 ```tsx
 import { Show, mergeProps, type Component } from "solid-js";
@@ -232,7 +232,7 @@ createRenderEffect(() => {
 
 ### Creating a reusable form field input
 
-Lets revist our `TextInput` example from above ([Stackblitz demo](#https://stackblitz.com/edit/vitejs-vite-dyy5v3?file=src/Example.tsx)),
+Lets revist our `TextInput` example from above ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-dyy5v3?file=src/Example.tsx)),
 
 ```tsx
 import { Show, For, mergeProps, type Component } from "solid-js";
@@ -649,7 +649,7 @@ As you might expect, FormArrays are very similar to FormGroups and are used to g
 
 FormArrays behave very similarly to FormGroups but with the change that you're dealing with an array of child controls (rather than an object containing child controls). FormArray also has one additional method `push()` which adds a new child control to the end of the FormArray. Other than `push()`, FormArray and FormGroup have the same interface (which comes from the [`IAbstractControlContainer` interface](#iabstractcontrolcontainer)). Read the [FormGroup section](#using-a-formgroup) if you haven't yet since all of it also applies to FormArray.
 
-Here's an example using a FormArray ((Stackblitz demo)[https://stackblitz.com/edit/vitejs-vite-33mz4o?file=src/Example.tsx]):
+Here's an example using a FormArray ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-33mz4o?file=src/Example.tsx)):
 
 ```tsx
 import { For, type Component } from "solid-js";
@@ -750,7 +750,7 @@ For a longer (but still summarized) explaination of why this is needed and what 
 
 To make it easier to build nice, reusable form components, Solid Forms provides an optional `withControl()` higher order component.
 
-For example ((Stackblitz demo)[https://stackblitz.com/edit/vitejs-vite-ndpyd3?file=src/AddressField.tsx]):
+For example ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-ndpyd3?file=src/AddressField.tsx)):
 
 ```tsx
 import { Show, type Component } from "solid-js";
@@ -803,7 +803,7 @@ const AddressField = withControl<{ legend?: string }, typeof controlFactory>({
 });
 ```
 
-We can then reuse this AddressField component in a hypothetical parent component like so ((Stackblitz demo)[https://stackblitz.com/edit/vitejs-vite-ndpyd3?file=src/Example.tsx]):
+We can then reuse this AddressField component in a hypothetical parent component like so ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-ndpyd3?file=src/Example.tsx)):
 
 ```tsx
 import { AddressField } from "./AddressField";
@@ -929,7 +929,7 @@ export const ParentForm: Component<{}> = () => {
 
 ### Simple example with validation
 
-_Also see (Stackblitz demo)[https://stackblitz.com/edit/vitejs-vite-lzcbdd?file=src/Example.tsx]_.
+_Also see [Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-lzcbdd?file=src/Example.tsx)_.
 
 ```tsx
 const ExampleComponent: Component<{}> = () => {
@@ -963,7 +963,7 @@ const ExampleComponent: Component<{}> = () => {
 };
 ```
 
-Alternatively, this is effectively the same as the above (Stackblitz demo)[https://stackblitz.com/edit/vitejs-vite-lzcbdd?file=src/Example-alt.tsx]:
+Alternatively, this is effectively the same as the above [Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-lzcbdd?file=src/Example-alt.tsx):
 
 ```tsx
 const ExampleComponent: Component<{}> = () => {
@@ -1005,7 +1005,7 @@ const ExampleComponent: Component<{}> = () => {
 
 ### Medium example
 
-_See (Stackblitz demo)[https://stackblitz.com/edit/vitejs-vite-mmmzfj?file=src/Example.tsx]._
+_See [Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-mmmzfj?file=src/Example.tsx)._
 
 ```tsx
 import { Show, type Component } from "solid-js";
@@ -1072,7 +1072,7 @@ const TextInput: Component<{
 };
 ```
 
-Alternatively ((Stackblitz demo)[https://stackblitz.com/edit/vitejs-vite-mmmzfj?file=src/Example-alt.tsx]):
+Alternatively ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-mmmzfj?file=src/Example-alt.tsx)):
 
 ```tsx
 const ExampleForm: Component<{}> = () => {
