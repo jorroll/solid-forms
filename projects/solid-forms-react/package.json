@@ -1,6 +1,6 @@
 {
   "name": "solid-forms-react",
-  "version": "0.4.0",
+  "version": "0.4.3",
   "sideEffects": false,
   "workspaces": {
     "nohoist": [
@@ -11,7 +11,7 @@
     "react": "^17.0.0"
   },
   "dependencies": {
-    "solid-forms": "^0.4.0",
+    "solid-forms": "^0.4.3",
     "solid-js": "^1.4.0"
   },
   "devDependencies": {
