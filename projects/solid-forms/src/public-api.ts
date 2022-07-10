@@ -1,5 +1,2 @@
-/*
- * Public API Surface of reactive-forms-two
- */
-
-export * from './lib/public-api';
+export * from 'solid-forms/core';
+export * from './withControl';

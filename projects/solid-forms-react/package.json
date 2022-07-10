@@ -8,10 +8,10 @@
     ]
   },
   "peerDependencies": {
-    "react": "^17.0.2"
+    "react": "^17.0.0"
   },
   "dependencies": {
-    "solid-forms": "^0.3.0",
+    "solid-forms": "^0.4.0",
     "solid-js": "^1.4.0"
   },
   "devDependencies": {

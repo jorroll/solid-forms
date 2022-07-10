@@ -11,6 +11,7 @@
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
     "pub": "yarn test --since && yarn build --since && yarn lerna version --no-push && yarn copyPackageToBuild && yarn lerna publish from-git --yes --contents build",
     "copyPackageToBuild": "lerna run copyPackageToBuild",
+    "clear:node_modules": "rm -rf node_modules projects/*/node_modules",
     "build": "lerna run build --stream",
     "test": "lerna run test --stream"
   },
@@ -27,6 +28,7 @@
     "jest": "^28.1.0",
     "jest-cli": "^28.1.0",
     "lerna": "^3.22.1",
+    "ncp": "^2.0.0",
     "ts-jest": "^28.0.3",
     "ts-node": "~8.3.0",
     "tsconfig-paths": "^4.0.0",

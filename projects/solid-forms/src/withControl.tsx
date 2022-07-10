@@ -6,8 +6,10 @@ import {
   JSX,
   ParentProps,
 } from "solid-js";
-import { IAbstractControl } from "./abstract-control";
-import { isAbstractControlContainer } from "./abstract-control-container";
+import {
+  isAbstractControlContainer,
+  type IAbstractControl,
+} from "solid-forms/core";
 
 type WithControlProps<
   Props,
