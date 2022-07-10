@@ -1,6 +1,6 @@
 {
   "name": "solid-forms",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A Solidjs library for working with forms.",
   "license": "Unlicense",
   "sideEffects": false,
@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "jest --config './jest.config.ts'",
-    "build": "rollup -c rollup.config.js"
+    "build": "rollup -c rollup.config.js && tsc"
   },
   "peerDependencies": {
     "solid-js": "^1.4.0"
@@ -32,20 +32,27 @@
     "ts-node": "^10.8.0",
     "type-fest": "^2.3.0"
   },
-  "main": "dist/cjs/public-api.js",
-  "module": "dist/esm/public-api.js",
-  "types": "dist/types/public-api.d.ts",
+  "main": "dist/public-api/index.common.js",
+  "module": "dist/public-api/index.module.js",
+  "types": "dist/public-api/public-api.d.ts",
   "files": [
     "dist",
-    "src",
     "LICENSE"
   ],
   "exports": {
     ".": {
-      "import": "./dist/esm/public-api.js",
-      "browser": "./dist/esm/public-api.js",
-      "require": "./dist/cjs/public-api.js",
-      "node": "./dist/cjs/public-api.js"
+      "import": "./dist/public-api/index.module.js",
+      "browser": "./dist/public-api/index.module.js",
+      "require": "./dist/public-api/index.common.js",
+      "node": "./dist/public-api/index.common.js",
+      "types": "./dist/public-api/public-api.d.ts"
+    },
+    "./core": {
+      "import": "./dist/core/index.module.js",
+      "browser": "./dist/core/index.module.js",
+      "require": "./dist/core/index.common.js",
+      "node": "./dist/core/index.common.js",
+      "types": "./dist/core/index.d.ts"
     }
   }
 }
