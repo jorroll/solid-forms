@@ -24,7 +24,7 @@ export interface IWithControlOptions<
   ControlFactory extends (...args: [any, ...any[]]) => IAbstractControl
 > {
   controlFactory: ControlFactory;
-  component: ComponentType<
+  Component: ComponentType<
     WithControlProps<Props, ControlFactory> & {
       control: ReturnType<ControlFactory>;
     }
@@ -85,7 +85,7 @@ export function withControl<
       return disposer;
     }, [disposer]);
 
-    const Component = options.component;
+    const Component = options.Component;
 
     return <Component {...props} control={control} />;
   };
