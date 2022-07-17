@@ -493,7 +493,7 @@ export function createAbstractControlContainerBase<
       const controls = nonDisabledControlsMemo();
 
       return controls.reduce((prev, curr) => {
-        return prev === null && curr === null
+        return prev === null && curr.errors === null
           ? null
           : { ...prev, ...curr.errors };
       }, null as ValidationErrors | null);
