@@ -1,6 +1,3 @@
-import typescript from "@rollup/plugin-typescript";
-import jsx from "acorn-jsx";
-import { getBabelOutputPlugin } from "@rollup/plugin-babel";
 import withSolid from "rollup-preset-solid";
 import commonjs from "@rollup/plugin-commonjs";
 
