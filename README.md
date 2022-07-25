@@ -49,7 +49,7 @@ _Note: Solid Forms is brand new and should be considered "beta" until the versio
 
 ## Getting Started
 
-The basic building block of Solid Forms are FormControls (see `IFormControl` API). A FormControl is intended to model a single input element of a form. For example, an `<input />` element or a radio button group. You can use a FormControl to save the value of the input, to handle validation and track errors, to track whether the input has been touched, changed, submitted, etc. Importantly, the FormControl itself is just a [Solidjs `store` object](https://www.solidjs.com/docs/latest/api#using-stores) so all of it's properties are observable and you can easily respond to changes (e.g. with `createEffect()` or just using the control values inside of a component directly).
+The basic building block of Solid Forms are FormControls (see `IFormControl` API). A FormControl is intended to model a single input element of a form. For example, an `<input />` element or a radio button group. You can use a FormControl to save the value of the input, to handle validation and track errors, to track whether the input has been touched, changed, submitted, etc. Importantly, the FormControl itself is just a [Solidjs `Store` object](https://www.solidjs.com/docs/latest/api#using-stores) so all of it's properties are observable and you can easily respond to changes (e.g. with `createEffect()` or just using the control values inside of a component directly). **All form controls in `solid-forms` are immutable unless you use the provided methods to update their state.**
 
 For example ([Stackblitz demo](https://stackblitz.com/edit/vitejs-vite-dyy5v3?file=src/TextInput.tsx)),
 
@@ -170,7 +170,7 @@ const control = createFormControl("", {
 });
 ```
 
-If we want to set the value on our FormControl we can:
+If we want to set the value on our FormControl we can do the following (note, all control objects in `solid-forms` are immutable so you need to use the provided methods--e.g. `setValue()`--to update their state):
 
 ```ts
 control.setValue("Hi");
@@ -470,7 +470,7 @@ const group = createFormGroup(
 );
 ```
 
-If we want to add two child FormControls representing a person's name to our FormGroup we could:
+If we want to add two child FormControls representing a person's name to our FormGroup we could do the following (note, all control objects in `solid-forms` are immutable so you need to use the provided methods--e.g. `setControl()`--to update their state):
 
 ```ts
 group.setControl("firstName", createFormControl(""));
@@ -702,7 +702,7 @@ const ExampleForm: Component<{}> = () => {
 
 In this example, we have a form asking for all of the user's phone numbers. Users can add or remove phone numbers from the form using buttons in the form (i.e. `<button onclick={addPhoneNumber}>Add phone number</button>`). As the user does this, callbacks will file which adds or removes FormControls from the FormArray. Since this is all observable, changes will be reflected in the component.
 
-See the [IFormArray API below](#iformarray) for more information.
+See the [IFormArray API below](#iformarray) for more information. Note, all control objects in `solid-forms` are immutable so you need to use the provided methods (e.g. `IFormArray#push()`) to update their state.
 
 #### Creating controls asyncronously (i.e. `bindOwner()`)
 
@@ -1119,6 +1119,8 @@ const ExampleForm: Component<{}> = () => {
 ```
 
 ## API
+
+Note, all controls objects are immutable unless you use the provided methods to update their state.
 
 ### IAbstractControl
 
@@ -1626,7 +1628,7 @@ export interface IAbstractControlContainer<
 
 ### IFormControl
 
-[See the `IAbstractControl` interface, above.](#iabstractcontrol) IFormControl has the same properties as that interface.
+[See the `IAbstractControl` interface, above.](#iabstractcontrol) IFormControl has the same properties as that interface. Like other `solid-forms` controls, form controls immutable unless you use the provided methods to update it's state.
 
 ```ts
 interface IFormControl<
@@ -1673,7 +1675,7 @@ interface IFormControlOptions<
 
 ### IFormGroup
 
-[See the `IAbstractControlContainer` interface, above.](#iabstractcontrolcontainer) IFormGroup has the same properties as that interface.
+[See the `IAbstractControlContainer` interface, above.](#iabstractcontrolcontainer) IFormGroup has the same properties as that interface. Like other `solid-forms` controls, form groups immutable unless you use the provided methods to update it's state.
 
 ```ts
 interface IFormGroup<
@@ -1724,7 +1726,7 @@ interface IFormGroupOptions<
 
 ### IFormArray
 
-[See the `IAbstractControlContainer` interface, above.](#iabstractcontrolcontainer) IFormArray has the same properties as that interface with one addtion: `push()` for adding new child controls to the end of the form array.
+[See the `IAbstractControlContainer` interface, above.](#iabstractcontrolcontainer) IFormArray has the same properties as that interface with one addtion: `push()` for adding new child controls to the end of the form array.Like other `solid-forms` controls, form arrays immutable unless you use the provided methods to update it's state.
 
 ```ts
 interface IFormArray<
