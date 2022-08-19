@@ -23,7 +23,7 @@ import {
   IAbstractControlBaseOptions,
 } from './abstract-control-base';
 
-import { SetStoreFunction, Store } from 'solid-js/store';
+import { produce, SetStoreFunction, Store } from 'solid-js/store';
 import { Accessor, batch, createMemo } from 'solid-js';
 import { isEqual, mergeObj } from './util';
 import type { PartialDeep } from 'type-fest';
@@ -304,7 +304,17 @@ export function createAbstractControlContainerBase<
 
     setControls(controls: Controls) {
       if (isEqual(control.controls, controls)) return;
-      setControl('controls', controls);
+
+      // We're using `produce()` here because using the standard solid Store
+      // nested setter has some bugs (i.e.
+      // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+      // bugs are isolated to object values, so, at the moment, I'm only using
+      // produce where the value is an object.
+      setControl(
+        produce((state) => {
+          (state.controls as Controls) = controls;
+        })
+      );
     },
 
     /**
