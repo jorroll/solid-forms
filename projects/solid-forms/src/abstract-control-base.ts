@@ -5,7 +5,7 @@ import type {
   AbstractControlInterface,
 } from './abstract-control';
 import { IAbstractControl } from './abstract-control';
-import { SetStoreFunction, Store } from 'solid-js/store';
+import { produce, SetStoreFunction, Store } from 'solid-js/store';
 import {
   Accessor,
   createComputed,
@@ -224,7 +224,16 @@ export function createAbstractControlBase<
 
       if (isEqual(this.self.pendingStore, newPendingStore)) return;
 
-      setControl('self', 'pendingStore', newPendingStore);
+      // We're using `produce()` here because using the standard solid Store
+      // nested setter has some bugs (i.e.
+      // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+      // bugs are isolated to object values, so, at the moment, I'm only using
+      // produce where the value is an object.
+      setControl(
+        produce((state) => {
+          (state.self.pendingStore as Set<ControlId>) = newPendingStore;
+        })
+      );
     },
 
     setErrors(input, options) {
@@ -245,7 +254,17 @@ export function createAbstractControlBase<
 
       if (isEqual(this.self.errorsStore, newErrorsStore)) return;
 
-      setControl('self', 'errorsStore', newErrorsStore);
+      // We're using `produce()` here because using the standard solid Store
+      // nested setter has some bugs (i.e.
+      // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+      // bugs are isolated to object values, so, at the moment, I'm only using
+      // produce where the value is an object.
+      setControl(
+        produce((state) => {
+          (state.self.errorsStore as Map<ControlId, ValidationErrors>) =
+            newErrorsStore;
+        })
+      );
     },
 
     patchErrors(input, options) {
@@ -255,10 +274,16 @@ export function createAbstractControlBase<
       >;
 
       if (input instanceof Map) {
+        // We're using `produce()` here because using the standard solid Store
+        // nested setter has some bugs (i.e.
+        // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+        // bugs are isolated to object values, so, at the moment, I'm only using
+        // produce where the value is an object.
         setControl(
-          'self',
-          'errorsStore',
-          new Map([...existingStore, ...input])
+          produce((state) => {
+            (state.self.errorsStore as Map<ControlId, ValidationErrors>) =
+              new Map([...existingStore, ...input]);
+          })
         );
       } else {
         if (Object.keys(input).length === 0) return;
@@ -301,7 +326,17 @@ export function createAbstractControlBase<
 
         if (isEqual(this.self.errorsStore, newErrorsStore)) return;
 
-        setControl('self', 'errorsStore', newErrorsStore);
+        // We're using `produce()` here because using the standard solid Store
+        // nested setter has some bugs (i.e.
+        // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+        // bugs are isolated to object values, so, at the moment, I'm only using
+        // produce where the value is an object.
+        setControl(
+          produce((state) => {
+            (state.self.errorsStore as Map<ControlId, ValidationErrors>) =
+              newErrorsStore;
+          })
+        );
       }
     },
 
@@ -330,13 +365,31 @@ export function createAbstractControlBase<
 
       if (isEqual(this.self.validatorStore, newValidatorsStore)) return;
 
-      setControl('self', 'validatorStore', newValidatorsStore);
+      // We're using `produce()` here because using the standard solid Store
+      // nested setter has some bugs (i.e.
+      // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+      // bugs are isolated to object values, so, at the moment, I'm only using
+      // produce where the value is an object.
+      setControl(
+        produce((state) => {
+          (state.self.validatorStore as Map<ControlId, ValidatorFn<any>>) =
+            newValidatorsStore;
+        })
+      );
     },
 
     setData(key, input) {
       if (isEqual(this.data[key], input)) return;
-      // tslint:disable-next-line: no-any
-      setControl('data', key as any, input);
+      // We're using `produce()` here because using the standard solid Store
+      // nested setter has some bugs (i.e.
+      // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+      // bugs are isolated to object values, so, at the moment, I'm only using
+      // produce where the value is an object.
+      setControl(
+        produce((state) => {
+          state.data[key] = input;
+        })
+      );
     },
   };
 
@@ -404,7 +457,17 @@ export function createAbstractControlBase<
 
           if (isEqual(control.self.errorsStore, newErrorsStore)) return;
 
-          setControl('self', 'errorsStore', newErrorsStore);
+          // We're using `produce()` here because using the standard solid Store
+          // nested setter has some bugs (i.e.
+          // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+          // bugs are isolated to object values, so, at the moment, I'm only using
+          // produce where the value is an object.
+          setControl(
+            produce((state) => {
+              (state.self.errorsStore as Map<ControlId, ValidationErrors>) =
+                newErrorsStore;
+            })
+          );
         }
       )
     );

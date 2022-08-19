@@ -1,5 +1,4 @@
-import { batch } from 'solid-js';
-import { createStore, SetStoreFunction, Store } from 'solid-js/store';
+import { createStore, produce, SetStoreFunction, Store } from 'solid-js/store';
 import {
   IAbstractControl,
   ControlId,
@@ -74,7 +73,17 @@ export function createFormControl<
 
     setValue(value) {
       if (isEqual(this.value, value)) return;
-      setControl('rawValue', value);
+
+      // We're using `produce()` here because using the standard solid Store
+      // nested setter has some bugs (i.e.
+      // `setControl('self', 'pendingStore', newPendingStore)`). I think the
+      // bugs are isolated to object values, so, at the moment, I'm only using
+      // produce where the value could be an object.
+      setControl(
+        produce((state) => {
+          (state.rawValue as Value) = value;
+        })
+      );
     },
   } as IFormControl<Value, Data>);
 
