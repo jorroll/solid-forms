@@ -6,6 +6,12 @@ This repo attempts to follow [semantic versioning](https://semver.org/).
 
 - none
 
+## 0.4.7 FIX (2023/1/2)
+
+### Fix
+
+- Loosened the typing of `useControl()` in `solid-forms-react` package.
+
 ## 0.4.6 FIX (2022/8/19)
 
 ### Fix
