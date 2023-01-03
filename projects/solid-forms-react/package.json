@@ -8,7 +8,7 @@
     ]
   },
   "peerDependencies": {
-    "react": "^17.0.0"
+    "react": "17"
   },
   "dependencies": {
     "solid-forms": "^0.4.6",
@@ -28,7 +28,7 @@
     "vite": "^2.9.14"
   },
   "scripts": {
-    "test": "jest --config './jest.config.js'",
+    "test": "jest --config './jest.config.ts' --passWithNoTests",
     "clean": "rm -rf dist",
     "build": "vite build && tsc",
     "copyPackageToBuild": "ncp package.json dist/package.json"

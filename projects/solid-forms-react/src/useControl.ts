@@ -9,7 +9,7 @@ import { createRoot } from 'solid-js';
  * Optionally, you can provide a `deps` array which will cause
  * the control to be recreated when the `deps` change.
  */
-export function useControl<T extends IAbstractControl>(
+export function useControl<T extends IAbstractControl | undefined>(
   controlFactory: () => T,
   deps: unknown[] = []
 ): T {
@@ -18,7 +18,7 @@ export function useControl<T extends IAbstractControl>(
     deps
   );
 
-  useEffect(() => dispose, [dispose]);
+  useEffect(dispose, [dispose]);
 
   return control;
 }
