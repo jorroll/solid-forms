@@ -6,6 +6,12 @@ This repo attempts to follow [semantic versioning](https://semver.org/).
 
 - none
 
+## 0.4.8 FIX (2023/1/2)
+
+### Fix
+
+- Loosened the typing of `useControlState()` in `solid-forms-react` package.
+
 ## 0.4.7 FIX (2023/1/2)
 
 ### Fix

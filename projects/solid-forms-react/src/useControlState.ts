@@ -4,7 +4,7 @@ import type { IAbstractControl } from 'solid-forms';
 
 export function useControlState<T>(
   fn: () => T,
-  deps: [theControl: IAbstractControl, ...otherDeps: any[]],
+  deps: [theControl: IAbstractControl | undefined, ...otherDeps: any[]],
   isEqual: (a: T, b: T) => boolean = isEqualDefault
 ): T {
   const initialValue = useMemo(fn, []);
