@@ -18,7 +18,8 @@ export function useControl<T extends IAbstractControl | undefined>(
     deps
   );
 
-  useEffect(dispose, [dispose]);
+  // We only want dispose to be called on unmount
+  useEffect(() => dispose, [dispose]);
 
   return control;
 }

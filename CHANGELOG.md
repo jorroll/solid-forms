@@ -6,6 +6,12 @@ This repo attempts to follow [semantic versioning](https://semver.org/).
 
 - none
 
+## 0.4.9 FIX (2023/1/2)
+
+### Fix
+
+- Only call dispose on unmount in `solid-forms-react` `useControl()`.
+
 ## 0.4.8 FIX (2023/1/2)
 
 ### Fix
