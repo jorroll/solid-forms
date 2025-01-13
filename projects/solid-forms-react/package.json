@@ -31,8 +31,7 @@
   "scripts": {
     "test": "jest --config './jest.config.ts' --passWithNoTests",
     "clean": "rm -rf dist",
-    "build": "vite build && tsc",
-    "copyPackageToBuild": "ncp package.json dist/package.json"
+    "build": "vite build && tsc"
   },
   "main": "dist/solid-forms-react.cjs.js",
   "module": "dist/solid-forms-react.es.js",
