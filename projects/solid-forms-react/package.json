@@ -1,6 +1,6 @@
 {
   "name": "solid-forms-react",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "sideEffects": false,
   "workspaces": {
     "nohoist": [
@@ -11,7 +11,7 @@
     "react": "17 || 18"
   },
   "dependencies": {
-    "solid-forms": "^0.5.1",
+    "solid-forms": "^0.5.2",
     "solid-js": "^1.4.0"
   },
   "devDependencies": {
@@ -21,13 +21,13 @@
     "@types/react": "18",
     "@types/use-sync-external-store": "^0.0.6",
     "@vitejs/plugin-react": "^1.3.2",
-    "react-use": "^17.6.0",
-    "use-sync-external-store": "^1.4.0",
     "core-js": "^3.22.7",
     "jest-environment-jsdom": "^28.1.0",
     "react": "18",
+    "react-use": "^17.6.0",
     "ts-node": "^10.8.0",
     "type-fest": "^2.3.0",
+    "use-sync-external-store": "^1.4.0",
     "vite": "^2.9.14"
   },
   "scripts": {
