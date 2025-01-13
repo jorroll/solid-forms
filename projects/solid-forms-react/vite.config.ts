@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite';
-import { narrowSolidPlugin } from '@merged/react-solid/plugin';
 import react from '@vitejs/plugin-react';
 
 const external = ['react', 'solid-forms/core', 'solid-js', 'tslib'];

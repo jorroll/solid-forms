@@ -8,9 +8,10 @@
     ]
   },
   "peerDependencies": {
-    "react": "17"
+    "react": "18"
   },
   "dependencies": {
+    "react-use": "^17.6.0",
     "solid-forms": "^0.4.8",
     "solid-js": "^1.4.0"
   },
@@ -18,11 +19,11 @@
     "@babel/core": "^7.18.2",
     "@babel/preset-env": "^7.18.2",
     "@rollup/plugin-commonjs": "^22.0.0",
-    "@types/react": "17",
+    "@types/react": "18",
     "@vitejs/plugin-react": "^1.3.2",
     "core-js": "^3.22.7",
     "jest-environment-jsdom": "^28.1.0",
-    "react": "17",
+    "react": "18",
     "ts-node": "^10.8.0",
     "type-fest": "^2.3.0",
     "vite": "^2.9.14"

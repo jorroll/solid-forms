@@ -1,33 +1,32 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 import { createRoot, createEffect } from 'solid-js';
 import type { IAbstractControl } from 'solid-forms';
 
 export function useControlState<T>(
-  fn: () => T,
+  getControlState: () => T,
   deps: [theControl: IAbstractControl | undefined, ...otherDeps: any[]],
   isEqual: (a: T, b: T) => boolean = isEqualDefault
 ): T {
-  const initialValue = useMemo(fn, []);
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      return createRoot((teardown) => {
+        createEffect((prevValue) => {
+          const newValue = getControlState();
 
-  const [value, setValue] = useState(initialValue);
+          if (isEqual(newValue, prevValue as T)) return prevValue;
 
-  useEffect(() => {
-    const disposeFn = createRoot((disposer) => {
-      createEffect((prevValue) => {
-        const newValue = fn();
+          onStoreChange();
 
-        if (isEqual(newValue, prevValue as T)) return prevValue;
+          return newValue;
+        });
 
-        setValue(newValue);
-
-        return newValue;
+        return teardown;
       });
+    },
+    [...deps, isEqual]
+  );
 
-      return disposer;
-    });
-
-    return disposeFn;
-  }, [...deps, isEqual]);
+  const value = useSyncExternalStore(subscribe, getControlState);
 
   return value;
 }
