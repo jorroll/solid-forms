@@ -9,10 +9,10 @@
   },
   "scripts": {
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
-    "pub": "yarn test && yarn lerna version --no-push && yarn build && yarn lerna publish from-git --yes",
+    "pub": "yarn test && yarn build && yarn lerna version --no-push && yarn lerna publish from-git --yes",
     "clear:node_modules": "rm -rf node_modules projects/*/node_modules",
     "build": "lerna run build --stream",
-    "test": "lerna run test --stream && yarn build"
+    "test": "lerna run test --stream"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.13.0",
