@@ -1,6 +1,7 @@
-import { useSyncExternalStore, useCallback } from 'react';
+import { useCallback } from 'react';
 import { createRoot, createEffect } from 'solid-js';
 import type { IAbstractControl } from 'solid-forms';
+import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/shim/with-selector';
 
 export function useControlState<T>(
   getControlState: () => T,
@@ -26,7 +27,13 @@ export function useControlState<T>(
     [...deps, isEqual]
   );
 
-  const value = useSyncExternalStore(subscribe, getControlState);
+  const value = useSyncExternalStoreWithSelector(
+    subscribe,
+    getControlState,
+    undefined,
+    (snapshot) => snapshot,
+    isEqual
+  );
 
   return value;
 }
