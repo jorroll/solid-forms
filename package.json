@@ -10,9 +10,8 @@
   "scripts": {
     "pubcanary": "yarn test && yarn lerna version --no-push --preid next && yarn build && yarn lerna publish from-git --yes --dist-tag next --contents build",
     "pub": "yarn test && yarn lerna version --no-push && yarn build && yarn lerna publish from-git --yes",
-    "copyPackageToBuild": "lerna run copyPackageToBuild",
     "clear:node_modules": "rm -rf node_modules projects/*/node_modules",
-    "build": "lerna run build --stream && yarn copyPackageToBuild",
+    "build": "lerna run build --stream",
     "test": "lerna run test --stream && yarn build"
   },
   "devDependencies": {

@@ -6,6 +6,12 @@ This repo attempts to follow [semantic versioning](https://semver.org/).
 
 - none
 
+## 0.5.1 FIX (2025/1/12)
+
+### Fix (solid-forms-react)
+
+- Fix solid-forms-react build.
+
 ## 0.5.0 FEAT (2025/1/12)
 
 ### Feature (solid-forms-react)
