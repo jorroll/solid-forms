@@ -6,6 +6,12 @@ This repo attempts to follow [semantic versioning](https://semver.org/).
 
 - none
 
+## 0.5.2 FIX (2025/1/12)
+
+### Fix (solid-forms-react)
+
+- Fix solid-forms-react's `useControlState` hook.
+
 ## 0.5.1 FIX (2025/1/12)
 
 ### Fix (solid-forms-react)
