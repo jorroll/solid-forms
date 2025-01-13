@@ -6,6 +6,12 @@ This repo attempts to follow [semantic versioning](https://semver.org/).
 
 - none
 
+## 0.5.0 FEAT (2025/1/12)
+
+### Feature (solid-forms-react)
+
+- Breaking: update to React 18 and remove `withControl()`.
+
 ## 0.4.9 FIX (2023/1/2)
 
 ### Fix
